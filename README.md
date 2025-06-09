@@ -68,7 +68,7 @@ java -cp bin Main
 ## Observações
 
 - O arquivo `Lexer.java` é gerado automaticamente pelo JFlex, por isso não está versionado no repositório.
-- As pastas auxiliares (`.vscode`, `bin`, `lib`, `tools`, `leo`) também são ignoradas no Git.
+- As pastas auxiliares (`.vscode`, `bin`, `lib`, `tools`) também são ignoradas no Git.
 - Certifique-se de ter o Java instalado e configurado corretamente no seu sistema (`java` e `javac` no PATH).
 
 ---
