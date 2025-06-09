@@ -1,0 +1,16 @@
+# Ignora tudo exceto src e arquivos específicos da raiz
+/*
+!/src/
+!README.md
+!.gitignore
+
+# Ignora arquivos gerados dentro de src
+/src/Lexer.java
+/src/Lexer.java~
+
+# Ignora diretórios auxiliares
+/bin/
+/lib/
+/.vscode/
+/tools/
+/input.txt
