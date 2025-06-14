@@ -32,31 +32,74 @@
     ntk = 0;
 %init}
 
-    endofline = \r|\n|\r\n
-    whitespace = {endofline} | [ \t\f]
-    number = [:digit:] [:digit:]*
-    identifier = [:lowercase:]
-    linecomment = "//" (.)* {endofline}
-
 %state COMMENT
+
+digit = [0-9]
+lower = [a-z]
+upper = [A-Z]
+id = {lower}({lower}|{upper}|{digit}|_)*
+tyid = {upper}({lower}|{upper}|{digit}|_)*
+
+newline = \r|\n|\r\n
+whitespace = {newline} | [ \t\f]
 
 %%
 
 <YYINITIAL>{
-    {identifier} { return symbol(TOKEN_TYPE.ID);   }
-    {number}        { return symbol(TOKEN_TYPE.NUM, Integer.parseInt(yytext()));  }
-    "="             { return symbol(TOKEN_TYPE.EQ);   }
-    ";"             { return symbol(TOKEN_TYPE.SEMI); }
-    "*"             { return symbol(TOKEN_TYPE.TIMES); }
-    "+"             { return symbol(TOKEN_TYPE.PLUS); }
-    "/*"            { yybegin(COMMENT);               }
-    {whitespace}    { /* Não faz nada  */             }
-    {linecomment}   {                          }
+    "data"      { return symbol(TOKEN_TYPE.DATA); }
+    "abstract"  { return symbol(TOKEN_TYPE.ABSTRACT); }
+    "if"        { return symbol(TOKEN_TYPE.IF); }
+    "else"      { return symbol(TOKEN_TYPE.ELSE); }
+    "iterate"   { return symbol(TOKEN_TYPE.ITERATE); }
+    "read"      { return symbol(TOKEN_TYPE.READ); }
+    "print"     { return symbol(TOKEN_TYPE.PRINT); }
+    "return"    { return symbol(TOKEN_TYPE.RETURN); }
+    "new"       { return symbol(TOKEN_TYPE.NEW); }
+    "true"      { return symbol(TOKEN_TYPE.TRUE); }
+    "false"     { return symbol(TOKEN_TYPE.FALSE); }
+    "null"      { return symbol(TOKEN_TYPE.NULL); }
+
+    "=="        { return symbol(TOKEN_TYPE.EQ); }
+    "!="        { return symbol(TOKEN_TYPE.NEQ); }
+    "="         { return symbol(TOKEN_TYPE.ASSIGN); }
+    "::"        { return symbol(TOKEN_TYPE.DCOLON); }
+    ":"         { return symbol(TOKEN_TYPE.COLON); }
+    ";"         { return symbol(TOKEN_TYPE.SEMI); }
+    "."         { return symbol(TOKEN_TYPE.DOT); }
+    ","         { return symbol(TOKEN_TYPE.COMMA); }
+    "("         { return symbol(TOKEN_TYPE.LPAREN); }
+    ")"         { return symbol(TOKEN_TYPE.RPAREN); }
+    "{"         { return symbol(TOKEN_TYPE.LBRACE); }
+    "}"         { return symbol(TOKEN_TYPE.RBRACE); }
+    "["         { return symbol(TOKEN_TYPE.LBRACKET); }
+    "]"         { return symbol(TOKEN_TYPE.RBRACKET); }
+    "+"         { return symbol(TOKEN_TYPE.PLUS); }
+    "-"         { return symbol(TOKEN_TYPE.MINUS); }
+    "*"         { return symbol(TOKEN_TYPE.TIMES); }
+    "/"         { return symbol(TOKEN_TYPE.DIV); }
+    "%"         { return symbol(TOKEN_TYPE.MOD); }
+    "<"         { return symbol(TOKEN_TYPE.LT); }
+    "&&"        { return symbol(TOKEN_TYPE.AND); }
+    "!"         { return symbol(TOKEN_TYPE.NOT); }
+
+    {digit}+            { return symbol(TOKEN_TYPE.INT, Integer.parseInt(yytext())); }
+    {digit}+"."{digit}+ { return symbol(TOKEN_TYPE.FLOAT, Double.parseDouble(yytext())); }
+    \'([^\'\\]|\\[ntrb\'\\]|\\[0-9]{3})\'   { return symbol(TOKEN_TYPE.CHAR); }
+
+
+    {id}                { return symbol(TOKEN_TYPE.ID); }
+    {tyid}              { return symbol(TOKEN_TYPE.TYID); }
+
+    "--".*              { /* ignora comentário de linha */ }
+    "{-"                { yybegin(COMMENT); }
+
+    {whitespace}        { }
+
+    .                   { throw new RuntimeException("Illegal character: " + yytext()); }
 }
 
 <COMMENT>{
-   "*/"     { yybegin(YYINITIAL); } 
-   [^"*/"]* {                     }
+    "-}"                { yybegin(YYINITIAL); }
+    .|\n                { /* ignora dentro do comentário de bloco */ }           
 }
 
-[^]                 { throw new RuntimeException("Illegal character <"+yytext()+">"); }

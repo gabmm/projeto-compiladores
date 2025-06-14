@@ -31,7 +31,13 @@ public class Token {
 
     @Override
     public String toString(){
-       return "[("+line+","+ column+ ") \"" + lexeme + "\" : <" + (info == null ? "" : info.toString()) + ">] " + type;
+       return "Token{" +
+            "type=" + type +
+            ", lexeme='" + lexeme + '\'' +
+            ", value=" + info +
+            ", line=" + line +
+            ", column=" + column +
+            '}';
     }
 
 }
