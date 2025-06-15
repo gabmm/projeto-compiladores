@@ -18,6 +18,7 @@ public enum TOKEN_TYPE {
     PRINT,
     RETURN,
     NEW,
+    Int, Float, Bool, Char,
 
     LPAREN,      // (
     RPAREN,      // )
@@ -26,6 +27,7 @@ public enum TOKEN_TYPE {
     LBRACKET,    // [
     RBRACKET,    // ]
     LT,          // <
+    GT, // >
     SEMI,        // ;
     COLON,       // :
     DCOLON,      // ::

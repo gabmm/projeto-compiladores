@@ -58,6 +58,10 @@ whitespace = {newline} | [ \t\f]
     "true"      { return symbol(TOKEN_TYPE.TRUE); }
     "false"     { return symbol(TOKEN_TYPE.FALSE); }
     "null"      { return symbol(TOKEN_TYPE.NULL); }
+    "Int"       { return symbol(TOKEN_TYPE.Int); }
+    "Float"     { return symbol(TOKEN_TYPE.Float); }
+    "Bool"      { return symbol(TOKEN_TYPE.Bool); }
+    "Char"      { return symbol(TOKEN_TYPE.Char); }
 
     "=="        { return symbol(TOKEN_TYPE.EQ); }
     "!="        { return symbol(TOKEN_TYPE.NEQ); }
@@ -79,11 +83,12 @@ whitespace = {newline} | [ \t\f]
     "/"         { return symbol(TOKEN_TYPE.DIV); }
     "%"         { return symbol(TOKEN_TYPE.MOD); }
     "<"         { return symbol(TOKEN_TYPE.LT); }
+    ">"         { return symbol(TOKEN_TYPE.GT); }
     "&&"        { return symbol(TOKEN_TYPE.AND); }
     "!"         { return symbol(TOKEN_TYPE.NOT); }
 
     {digit}+            { return symbol(TOKEN_TYPE.INT, Integer.parseInt(yytext())); }
-    {digit}+"."{digit}+ { return symbol(TOKEN_TYPE.FLOAT, Double.parseDouble(yytext())); }
+    {digit}*"."{digit}+ { return symbol(TOKEN_TYPE.FLOAT, Double.parseDouble(yytext())); }
     \'([^\'\\]|\\[ntrb\'\\]|\\[0-9]{3})\'   { return symbol(TOKEN_TYPE.CHAR); }
 
 
@@ -100,6 +105,6 @@ whitespace = {newline} | [ \t\f]
 
 <COMMENT>{
     "-}"                { yybegin(YYINITIAL); }
-    .|\n                { /* ignora dentro do comentário de bloco */ }           
+    [^]                 {                     }           
 }
 
