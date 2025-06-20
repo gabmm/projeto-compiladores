@@ -1,17 +1,12 @@
 # Projeto Compiladores
 
-Este projeto contém a implementação de um analisador léxico utilizando [JFlex](https://jflex.de/) e Java. Ele faz parte do trabalho da disciplina de Teoria dos Compiladores.
-
 ## Estrutura do Projeto
 
 - `src/`: arquivos fonte
-  - `Lexer.flex`: especificação léxica
-  - `Main.java`: ponto de entrada do programa
-  - `Token.java`, `TOKEN_TYPE.java`: estruturas auxiliares
-- `lib/`: bibliotecas utilizadas (ex: JFlex)
+  - `lexer.flex`: especificação léxica
+  - `lang.grammar`: especificação da gramática
+- `lib/`: bibliotecas utilizadas (JFlex e Beaver)
 - `bin/`: arquivos compilados
-- `input.txt`: arquivo de entrada que será analisado
-- `.vscode/`, `tools/`: pastas auxiliares (ignoradas no repositório)
 
 ---
 
