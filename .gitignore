@@ -5,8 +5,10 @@
 !.gitignore
 
 # Ignora arquivos gerados dentro de src
-/src/Lexer.java
-/src/Lexer.java~
+/src/parser/Lexer.java
+/src/parser/Lexer.java~
+/src/parser/Terminals.java
+/src/parser/Parser.java
 
 # Ignora diretórios auxiliares
 /bin/

@@ -19,60 +19,56 @@ Este projeto contém a implementação de um analisador léxico utilizando [JFle
 
 Siga os passos abaixo para configurar e executar o projeto:
 
-### 1. Baixar o JFlex
+### 1. Baixar o JFlex e o Beaver
 
-- Faça o download do JFlex compilado, versão **1.8.2** (`jflex-full-1.8.2.jar`).
-- Este arquivo pode ser encontrado no *Classroom* da disciplina.
-- Salve o arquivo dentro da pasta `lib/` do projeto.
+- Faça o download do JFlex compilado `jflex-full-1.8.2.jar`.
+- Faça o download do runtime e do arquivo compilado do Beaver: `beaver-rt-0.9.11.jar` e `beaver-cc-0.9.11.jar`.
+- Todos estão no *Classroom* da disciplina.
+- Mova os arquivos para as pastas `/lib/jflex` e `/lib/beaver`.
 
 ### 2. Gerar o analisador léxico
-
-- Edite, se necessário, os seguintes arquivos em `src/`:
-  - `Lexer.flex`
-  - `Token.java`
-  - `TOKEN_TYPE.java`
 
 - Execute o comando abaixo para gerar o `Lexer.java`:
 
   ```bash
-  java -jar lib/jflex-full-1.8.2.jar src/Lexer.flex
+  java -jar /lib/jflex/jflex-full-1.8.2.jar /src/parser/lexer.flex
   ```
 
 > Isso criará o arquivo `Lexer.java` automaticamente na pasta `src/`.
+
+Não é mais necessário as classes auxiliares. Isso é construído pelo Beaver;
+
+### 2. Gerar o analisador sintático
+
+- Execute o comando abaixo para gerar o `Parser.java` e o `Terminals.java`:
+
+  ```bash
+  java -jar /lib/beaver/beaver-cc-0.9.11.jar -d /src/parser /src/parser/lang.grammar
+  ```
 
 ### 3. Compilar o projeto
 
 Compile todos os arquivos Java, incluindo o `Lexer.java` recém-gerado:
 
 ```bash
-javac -d bin src/TOKEN_TYPE.java src/Token.java src/Lexer.java src/Main.java
+javac -cp ".;lib/beaver/beaver-rt-0.9.11.jar" -d bin /src/parser/Terminals.java /src/parser/Parser.java /src/parser/Lexer.java /src/Main.java
 ```
 
 > Os arquivos `.class` serão gerados na pasta `bin/`.
 
-### 4. Preparar o arquivo de entrada
-
-- Crie um arquivo chamado `input.txt` com o conteúdo que deseja analisar.
-- Coloque esse arquivo na **pasta raiz** do projeto.
-
-### 5. Executar o programa
+### 4. Executar o programa
 
 Rode o programa com o comando:
 
 ```bash
-java -cp bin Main
+java -cp bin Main <input>
 ```
 
 ---
 
 ## Observações
 
-- O arquivo `Lexer.java` é gerado automaticamente pelo JFlex, por isso não está versionado no repositório.
 - As pastas auxiliares (`.vscode`, `bin`, `lib`, `tools`) também são ignoradas no Git.
 - Certifique-se de ter o Java instalado e configurado corretamente no seu sistema (`java` e `javac` no PATH).
 
 ---
-
-## Licença
-
-Este projeto é distribuído apenas para fins educacionais, sem fins lucrativos.

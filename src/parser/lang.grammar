@@ -1,0 +1,190 @@
+%package "parser";
+%import "java.io.IOException";
+
+%class "Parser";
+
+%terminals DATA, ABSTRACT, IF, ELSE, ITERATE, READ, PRINT, RETURN,
+            NEW, TRUE, FALSE, NULL, TYINT, TYFLOAT, TYBOOL, TYCHAR,
+            EQ, NEQ, ASSIGN, DCOLON, COLON, SEMI, DOT, COMMA, LPAREN,
+            RPAREN, LBRACE, RBRACE, LBRACKET, RBRACKET, PLUS, MINUS,
+            TIMES, DIV, MOD, LT, GT, AND, NOT, INT, FLOAT, CHAR, ID,
+            TYID;
+
+
+/* 
+    Explicações:
+    {} => recursão à esquerda ou à direita (list)
+    [] => uma vez ou vazio (opt)
+    ()* => mesmo que {}
+*/
+
+%goal prog;
+
+prog
+    = def_list 
+    ;
+
+def_list
+    = def_list def 
+    | /* vazio */ 
+    ;
+
+def
+    = data 
+    | fun 
+    ;
+
+data
+    = ABSTRACT DATA TYID LBRACE data_body RBRACE 
+    | DATA TYID LBRACE decl_list RBRACE 
+    ;
+
+data_body
+    = data_body decl_or_fun 
+    | /* vazio */ 
+    ;
+
+decl_or_fun
+    = decl 
+    | fun 
+    ;
+
+decl_list
+    = decl_list decl 
+    | decl 
+    ;
+
+decl
+    = ID DCOLON type SEMI 
+    ;
+
+fun
+    = ID LPAREN params_opt RPAREN types_opt cmd 
+    ;
+
+params_opt
+    = params 
+    | /* vazio */ 
+    ;
+
+types_opt
+    = COLON type type_list 
+    | /* vazio */ 
+    ;
+
+type_list
+    = type_list COMMA type 
+    | type 
+    ;
+
+params
+    = ID DCOLON type id_type_list 
+    ;
+
+id_type_list
+    = id_type_list COMMA ID DCOLON type 
+    | /* vazio */ 
+    ;
+
+type
+    = type LBRACKET RBRACKET 
+    | btype 
+    ;
+
+btype
+    = TYINT 
+    | TYCHAR 
+    | TYBOOL 
+    | TYFLOAT 
+    | TYID 
+    ;
+
+block
+    = LBRACE cmd_list RBRACE 
+    ;
+
+cmd_list
+    = cmd_list cmd 
+    | /* vazio */ 
+    ;
+
+cmd
+    = block 
+    | IF LPAREN exp RPAREN cmd 
+    | IF LPAREN exp RPAREN cmd ELSE cmd 
+    | ITERATE LPAREN itcond RPAREN cmd 
+    | READ lvalue SEMI 
+    | PRINT exp SEMI 
+    | RETURN exp_list SEMI 
+    | lvalue ASSIGN exp SEMI 
+    | ID LPAREN exps_opt RPAREN lvalue_opt SEMI 
+    ;
+
+exp_list
+    = exp_list COMMA exp 
+    | exp 
+    ;
+
+exps_opt
+    = exps 
+    | /* vazio */ 
+    ;
+
+lvalue_opt
+    = LT lvalue_list GT 
+    | /* vazio */ 
+    ;
+
+lvalue_list
+    = lvalue_list COMMA lvalue 
+    | lvalue 
+    ;
+
+itcond
+    = ID COLON exp 
+    | exp 
+    ;
+
+exp
+    = exp op exp 
+    | NOT exp 
+    | MINUS exp 
+    | lvalue 
+    | LPAREN exp RPAREN 
+    | NEW type exp_list_bracket 
+    | ID LPAREN exps_opt RPAREN LBRACKET exp RBRACKET 
+    | TRUE 
+    | FALSE 
+    | NULL 
+    | INT 
+    | FLOAT 
+    | CHAR 
+    ;
+
+exp_list_bracket
+    = LBRACKET exp RBRACKET 
+    | /* vazio */ 
+    ;
+
+op
+    = AND 
+    | LT 
+    | EQ 
+    | NEQ 
+    | PLUS 
+    | MINUS 
+    | TIMES 
+    | DIV 
+    | MOD 
+    ;
+
+lvalue
+    = ID 
+    | lvalue LBRACKET exp RBRACKET 
+    | lvalue DOT ID 
+    ;
+
+exps
+    = exp exp_list 
+    ;
+

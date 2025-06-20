@@ -1,17 +1,20 @@
 import java.io.FileReader;
-import java.io.IOException;
+import parser.Lexer;
+import parser.Parser;
 
 public class Main {
-    public static void main(String[] args) throws IOException {
-        FileReader reader = new FileReader("input.txt");
-        Lexer lexer = new Lexer(reader);
-        Token token = lexer.nextToken();
+    public static void main(String[] args) {
+        String filename = args[0];
 
-        while (token != null) {
-            System.out.println(token.toString());
-            token = lexer.nextToken();
+        try (FileReader fr = new FileReader(filename)) {
+            Lexer lexer = new Lexer(fr);
+            Parser parser = new Parser();
+            parser.parse(lexer);
+
+            System.out.println("accept");
+        } catch (Exception e) {
+            System.out.println("reject");
+            System.err.println(e.getMessage());
         }
-
-        System.out.println("Total: " + lexer.readedTokens());
     }
 }
