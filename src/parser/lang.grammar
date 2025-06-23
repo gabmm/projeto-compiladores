@@ -11,6 +11,13 @@
             TYID;
 
 
+//Implementar aqui a precedência das operações ex.:
+//%left TIMES
+
+//Implementar aqui o tipo de retorno para reduces. Casting automático feito pelo beaver. Ex.:
+//%typeof ID "String";
+//%typeof exp "Exp";
+
 /* 
     Explicações:
     {} => recursão à esquerda ou à direita (list)
@@ -18,20 +25,20 @@
     ()* => mesmo que {}
 */
 
-%goal prog;
+%goal prog; //simbolo inicial
 
 prog
-    = def_list 
+    = def_list
     ;
 
 def_list
-    = def_list def 
+    = def_list def
     | /* vazio */ 
     ;
 
 def
     = data 
-    | fun 
+    | fun
     ;
 
 data

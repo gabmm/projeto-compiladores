@@ -5,16 +5,16 @@ import java.math.BigDecimal;
 
 %%
 
-%public
-%class Lexer
-%extends Scanner
-%eofval{
-	return newToken(Terminals.EOF, "end-of-file");
-%eofval}
-%yylexthrow Scanner.Exception
-%unicode
-%function nextToken
+%public //precisa ser publica
+%class Lexer //nome da classe que vai ser gerada
+%extends Scanner //conexão com o beaver
+%function nextToken //nextToken e Symbol tambem interfaciam com o beaver
 %type Symbol
+%yylexthrow Scanner.Exception
+%eofval{
+	return newToken(Terminals.EOF, "end-of-file"); //classe terminals agora é gerada pelo beaver
+%eofval}
+%unicode
 %line
 %column
 
