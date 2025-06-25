@@ -10,13 +10,38 @@ public abstract class Visitor { //deve ter um método abstrato de visit para cad
     public abstract void visit(Add e);
 
     public abstract void visit(Eq e);
+    public abstract void visit(Neq e);
     public abstract void visit(Or e);
     public abstract void visit(And e);
+    public abstract void visit(Neg e);
 
     public abstract void visit(Var e);
     public abstract void visit(Attr e);
     public abstract void visit(Fun e);
+    public abstract void visit(NBool e);
+    public abstract void visit(NChar e);
+    public abstract void visit(NFloat e);
     public abstract void visit(NInt e);
+    public abstract void visit(NNot e);
     public abstract void visit(Param e);
     public abstract void visit(Print e);
+    public abstract void visit(If e);
+    public abstract void visit(Block e);
+    public abstract void visit(Cmd e);
+    public abstract void visit (ItCondId e);
+    public abstract void visit (ItCond e);
+    public abstract void visit (ItCondExp e);
+    public abstract void visit (Iterate e);
+    public abstract void visit (Return e);
+    public abstract void visit (Assign e);
+    public abstract void visit (ArrayAccess e);
+    public abstract void visit (FieldAccess e);
+    public abstract void visit (Call e);
+    public abstract void visit (CallStmt e);
+    public abstract void visit (Null e);
+    public abstract void visit (New e);
+    public abstract void visit (CmdList e);
+     public abstract void visit (Decl e);
+    public abstract void visit (Data e);
+    public abstract void visit (ExpList e);
 }
