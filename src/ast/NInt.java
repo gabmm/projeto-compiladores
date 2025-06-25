@@ -15,8 +15,7 @@ public class NInt extends Exp {
     }
 
     public String toString(){
-        //TO DO
-        return "NInt toString to be implemented";
+        return Integer.toString(value);
     }
 
     public void accept(Visitor v){v.visit(this);}  //todas classes concretas precisam do accept

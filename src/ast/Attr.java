@@ -2,7 +2,7 @@ package ast;
 
 import visitors.Visitor;
 
-public class Attr {
+public class Attr extends Node{
     private Var id;
     private Exp e;
 
@@ -20,8 +20,7 @@ public class Attr {
     }
 
     public String toString(){
-        //TO DO
-        return "Attr toString to be implemented";
+        return id.toString() + " = " + e.toString();
     }
 
     public void accept(Visitor v){v.visit(this);}  //todas classes concretas precisam do accept

@@ -21,8 +21,7 @@ public class Param extends Node {
     }
 
     public String toString(){
-        //TODO
-        return "Param toString to be implemented";
+        return "Param(" + id + " : " + type.toString() + ")";
     }
 
     public void accept(Visitor v){v.visit(this);}  //todas classes concretas precisam do accept

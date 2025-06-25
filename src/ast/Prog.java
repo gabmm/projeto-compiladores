@@ -14,8 +14,13 @@ public class Prog extends Node {
     }
 
     public String toString(){
-        //TO DO
-        return "Prog toString to be implemented";
+         StringBuilder sb = new StringBuilder();
+         sb.append("Prog{\n");
+         for (Fun f : fs) {
+             sb.append(f.toString()).append("\n");
+         }
+         sb.append("}");
+         return sb.toString();
     }
 
     public void accept(Visitor v){v.visit(this);}  //todas classes concretas precisam do accept

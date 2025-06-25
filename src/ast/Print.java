@@ -14,8 +14,7 @@ public class Print extends Node {
     }
 
     public String toString(){
-        //TODO
-        return "Print toString to be implemented"; 
+        return "print(" + e.toString() + ")";
     }
 
     public void accept(Visitor v){v.visit(this);}  //todas classes concretas precisam do accept

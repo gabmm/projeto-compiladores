@@ -33,8 +33,16 @@ public class Fun extends Node {
     }
 
     public String toString(){
-        //TO DO
-        return "Fun toString to be implemented";
+         StringBuilder sb = new StringBuilder();
+         sb.append("Fun ").append(id).append(" : ").append(type.toString()).append(" (");
+         for (int i = 0; i < params.length; i++) {
+            sb.append(params[i].toString());
+            if (i < params.length - 1) sb.append(", ");
+         }
+        sb.append(") {\n");
+        sb.append(body.toString()).append("\n");
+        sb.append("}");
+        return sb.toString();
     }
 
     public void accept(Visitor v){v.visit(this);}  //todas classes concretas precisam do accept

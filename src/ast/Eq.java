@@ -8,8 +8,7 @@ public class Eq extends BinOP {
     }
 
     public String toString(){
-        //TO DO
-        return "Eq toString to be implemented";
+        return "(" + getLeft().toString() + " == " + getRight().toString() + ")";
     }
 
     public void accept(Visitor v){v.visit(this);}  //todas classes concretas precisam do accept

@@ -2,8 +2,6 @@ package ast;
 
 import visitors.Visitor;
 
-public abstract class Exp extends Node{
-
-    public Exp(){}
+public abstract class Cmd extends Node {
     public abstract void accept(Visitor v);
 }
