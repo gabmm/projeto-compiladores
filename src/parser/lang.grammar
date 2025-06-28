@@ -1,197 +1,566 @@
 %package "parser";
-%import "java.io.IOException";
+%import "ast.*";
+%import "java.util.List";
+%import "java.util.ArrayList";
 
 %class "Parser";
 
-%terminals DATA, ABSTRACT, IF, ELSE, ITERATE, READ, PRINT, RETURN,
-            NEW, TRUE, FALSE, NULL, TYINT, TYFLOAT, TYBOOL, TYCHAR,
-            EQ, NEQ, ASSIGN, DCOLON, COLON, SEMI, DOT, COMMA, LPAREN,
-            RPAREN, LBRACE, RBRACE, LBRACKET, RBRACKET, PLUS, MINUS,
-            TIMES, DIV, MOD, LT, GT, AND, NOT, INT, FLOAT, CHAR, ID,
-            TYID;
+
+%terminals 
+    DATA, ABSTRACT, IF, ELSE, ITERATE, READ, PRINT, RETURN,
+    NEW, TRUE, FALSE, NULL, TYINT, TYFLOAT, TYBOOL, TYCHAR,
+    EQ, NEQ, ASSIGN, DCOLON, COLON, SEMI, DOT, COMMA, LPAREN,
+    RPAREN, LBRACE, RBRACE, LBRACKET, RBRACKET, PLUS, MINUS,
+    TIMES, DIV, MOD, LT, GT, AND, NOT, INT, FLOAT, CHAR, ID,
+    TYID;
+
+%typeof Prog = "Prog";
+%typeof def_list = "java.util.List<ast.Def>";
+%typeof def = "Def";
+%typeof data = "Data";
+%typeof decl_list = "java.util.List<ast.Def>";
+%typeof decl = "ast.Decl";
+%typeof fun = "Fun";
+%typeof params_opt = "java.util.List<ast.Param>";
+%typeof params = "java.util.List<ast.Param>";
+%typeof id_type_list = "java.util.List<ast.Param>";
+%typeof types_opt = "java.util.List<ast.TType>";
+%typeof type_list = "java.util.List<ast.TType>";
+%typeof type = "TType";
+%typeof btype = "TType";
+%typeof block = "Block";
+%typeof cmd_list = "java.util.List<ast.Cmd>";
+%typeof cmd = "Cmd";
+%typeof exp_list = "java.util.List<ast.Exp>";
+%typeof exps_opt = "java.util.List<ast.Exp>";
+%typeof exp = "Exp";
+%typeof lvalue_opt = "java.util.List<ast.LValue>";
+%typeof lvalue = "LValue";
+%typeof itcond = "ItCond";
+%typeof lvalue_list = "java.util.List<ast.LValue>";
+%typeof op = "java.lang.String";
+%typeof ID = "java.lang.String";
+%typeof INT = "Integer";
 
 
-//Implementar aqui a precedência das operações ex.:
-//%left TIMES
+%goal Prog;
 
-//Implementar aqui o tipo de retorno para reduces. Casting automático feito pelo beaver. Ex.:
-//%typeof ID "String";
-//%typeof exp "Exp";
-
-/* 
-    Explicações:
-    {} => recursão à esquerda ou à direita (list)
-    [] => uma vez ou vazio (opt)
-    ()* => mesmo que {}
-*/
-
-%goal prog; //simbolo inicial
-
-prog
-    = def_list
-    ;
+Prog
+  = def_list.dl
+    {:
+      System.out.println("Prog");
+      return new Symbol(sym.PROG, new ast.Prog(dl));
+    :}
+;
 
 def_list
-    = def_list def
-    | /* vazio */ 
-    ;
+  = def_list.dl def.d
+    {:
+      System.out.println("def list");
+      dl.add(d);
+      return new Symbol(sym.DEF_LIST, dl);
+    :}
+  | def.d
+    {:
+      System.out.println("def lista para def");
+      var list = new java.util.ArrayList<ast.Def>();
+      list.add(d);
+      return new Symbol(sym.DEF_LIST, list);
+    :}
+;
 
 def
-    = data 
-    | fun
-    ;
+  = data.d {: 
+  System.out.println("def para data ");
+  return new Symbol(sym.DEF, (ast.Data) d); :}
+  | fun.f  {: 
+  System.out.println("def para fun ");
+  return new Symbol(sym.DEF, (ast.Fun) f); :}
+;
 
 data
-    = ABSTRACT DATA TYID LBRACE data_body RBRACE 
-    | DATA TYID LBRACE decl_list RBRACE 
-    ;
-
-data_body
-    = data_body decl_or_fun 
-    | /* vazio */ 
-    ;
+  = ABSTRACT DATA TYID.id LBRACE decl_list.dl RBRACE
+    {:
+      String name = (String) id.value;
+      return new Symbol(sym.DATA, new ast.AbstractData(name, dl));
+    :}
+;
 
 decl_or_fun
-    = decl 
-    | fun 
-    ;
+  = decl.d {: return new Symbol(sym.DECL_LIST, d); :}
+  | fun.f  {: return new Symbol(sym.FUN, f); :}
+;
 
 decl_list
-    = decl_list decl 
-    | decl 
-    ;
+  = decl_list.dl decl_or_fun.dof
+    {:
+      var list = (List<ast.Def>) dl;
+      var def = (ast.Def) dof.value;
+      list.add(def);
+      return new Symbol(sym.DECL_LIST, list);
+    :}
+  | decl_or_fun.dof
+    {:
+      var list = new ArrayList<ast.Def>();
+      list.add((ast.Def) dof.value);
+      return new Symbol(sym.DECL_LIST, list);
+    :}
+;
 
 decl
-    = ID DCOLON type SEMI 
-    ;
+  = ID.id DCOLON type.t SEMI
+    {:
+      System.out.println(" decl");
+      return new Symbol(sym.DECL, new ast.Decl(id,  t));
+    :}
+;
 
 fun
-    = ID LPAREN params_opt RPAREN types_opt cmd 
-    ;
+  = ID.id LPAREN params_opt.pp RPAREN types_opt.tt block.bl
+    {:
+      System.out.println("Fun");
+      String               name   = id;
+      java.util.List<ast.Param>   params = pp;
+      java.util.List<ast.TType>   types  = tt;
+      ast.Block             body   = bl;
+
+      List<ast.TType> ret = types.isEmpty() ? null : java.util.List.of(types.get(0));
+
+      return new Symbol(sym.FUN, new ast.Fun(name, ret, params, body));
+    :}
+   
+;
 
 params_opt
-    = params 
-    | /* vazio */ 
-    ;
+  = params.p
+    {:
+      System.out.println("params_opt cheia ");
+      return new Symbol(sym.PARAMS_OPT, p);
+    :}
+  ;
 
-types_opt
-    = COLON type type_list 
-    | /* vazio */ 
-    ;
-
-type_list
-    = type_list COMMA type 
-    | type 
-    ;
 
 params
-    = ID DCOLON type id_type_list 
-    ;
+  = ID.id DCOLON type.t id_type_list.itl
+    {:
+      System.out.println("params ");
+      ast.Param param = new ast.Param(id, t);
+      itl.add(0, param);
+      return new Symbol(sym.PARAMS, itl);
+    :}
+  | /* vazio */
+    {:
+      return new Symbol(sym.PARAMS, new java.util.ArrayList<ast.Param>());
+    :}
+  ;
 
 id_type_list
-    = id_type_list COMMA ID DCOLON type 
-    | /* vazio */ 
-    ;
+  = COMMA ID.id DCOLON type.t id_type_list.itl
+    {:
+      System.out.println("id_type_list: COMMA ID :: type ...");
+      String id2 = (String) id;
+      ast.TType t2 = (ast.TType) t;
+      java.util.List<ast.Param> list = (java.util.List<ast.Param>) itl;
+
+      list.add(0, new ast.Param(id2, t2)); 
+      return new Symbol(sym.ID_TYPE_LIST, list);
+    :}
+  | /* vazio */
+    {:
+      System.out.println("id_type_list: vazio");
+      return new Symbol(sym.ID_TYPE_LIST, new java.util.ArrayList<ast.Param>());
+    :}
+;
+
+types_opt
+  = COLON type_list.tl
+    {:
+      return new Symbol(sym.TYPES_OPT, tl);
+    :}
+  | /* vazio */
+    {:
+      System.out.println("type_opts vazia ");
+      return new Symbol(sym.TYPES_OPT, new java.util.ArrayList<ast.TType>());
+    :}
+  ;
+
+
+
+type_list
+  = type_list.tl COMMA type.t
+    {:
+      java.util.List<ast.TType> list = (java.util.List<ast.TType>) tl;
+      list.add((ast.TType) t);
+      return new Symbol(sym.TYPE_LIST, list);
+    :}
+  | type.t
+    {:
+      java.util.List<ast.TType> list = new java.util.ArrayList<>();
+      list.add((ast.TType) t);
+      return new Symbol(sym.TYPE_LIST, list);
+    :}
+  ;
+
 
 type
-    = type LBRACKET RBRACKET 
-    | btype 
-    ;
+  = type.t LBRACKET RBRACKET
+    {:
+      System.out.println("type: []");
+      ast.TType base = (ast.TType) t;
+      return new Symbol(sym.TYPE, new ast.TTypeArray(base));
+    :}
+  | btype.b
+    {:
+      System.out.println("type: base: " + b);
+      ast.TType base = (ast.TType) b;
+      return new Symbol(sym.TYPE, base);
+    :}
+;
+
+
+
 
 btype
-    = TYINT 
-    | TYCHAR 
-    | TYBOOL 
-    | TYFLOAT 
-    | TYID 
-    ;
+  = TYINT   {: return new Symbol(sym.BTYPE, new ast.TyInt()); :}
+  | TYCHAR  {: return new Symbol(sym.BTYPE, new ast.TyChar()); :}
+  | TYBOOL  {: return new Symbol(sym.BTYPE, new ast.TyBool()); :}
+  | TYFLOAT {: return new Symbol(sym.BTYPE, new ast.TyFloat()); :}
+  | TYID.id {: return new Symbol(sym.BTYPE, new ast.TyId((String) id.value)); :}
+  ;
+
 
 block
-    = LBRACE cmd_list RBRACE 
-    ;
+  = LBRACE cmd_list.cl RBRACE 
+    {:
+      System.out.println("block ");
+      java.util.List<ast.Cmd> cmds = (java.util.List<ast.Cmd>) cl;
+      return new Symbol(sym.BLOCK, new ast.Block(cmds));
+    :}
+
+    | /* vazio */ 
+    {: 
+    System.out.println("block vazio");
+     return new Symbol(sym.BLOCK, new ast.Block(new java.util.ArrayList<ast.Cmd>()));
+     :}
+
+  ;
 
 cmd_list
-    = cmd_list cmd 
-    | /* vazio */ 
-    ;
+  = cmd_list.cl cmd.c
+    {:
+      System.out.println("cmd_list com cmd");
+      java.util.List<ast.Cmd> list = (java.util.List<ast.Cmd>) cl;
+      list.add((ast.Cmd) c);
+      return new Symbol(sym.CMD_LIST, list);
+    :}
+  | /* vazio */
+    {:
+      System.out.println("cmd_list vazio");
+      return new Symbol(sym.CMD_LIST, new java.util.ArrayList<ast.Cmd>());
+    :}
+  ;
+
 
 cmd
-    = block 
-    | IF LPAREN exp RPAREN cmd 
-    | IF LPAREN exp RPAREN cmd ELSE cmd 
-    | ITERATE LPAREN itcond RPAREN cmd 
-    | READ lvalue SEMI 
-    | PRINT exp SEMI 
-    | RETURN exp_list SEMI 
-    | lvalue ASSIGN exp SEMI 
-    | ID LPAREN exps_opt RPAREN lvalue_opt SEMI 
-    ;
+  = block.b
+    {:
+      System.out.println("cmd block: " );
+      return new Symbol(sym.CMD, b.value);
+    :}
+
+  | IF LPAREN exp.e RPAREN cmd.c
+    {:
+        final ast.Exp cond = (ast.Exp) e;
+        final ast.Cmd thenCmd = (ast.Cmd) c;
+        return new Symbol(sym.CMD, new ast.If(cond, thenCmd, null));
+    :}
+
+  | IF LPAREN exp.e RPAREN cmd.c ELSE cmd.c2
+    {:
+      final ast.Exp cond = (ast.Exp) e;
+      final ast.Cmd thenCmd = (ast.Cmd) c;
+      final ast.Cmd elseCmd = (ast.Cmd) c2;
+      return new Symbol(sym.CMD, new ast.If(cond, thenCmd, elseCmd));
+    :}
+
+  | ITERATE LPAREN itcond.it RPAREN cmd.c
+    {:
+      ast.ItCond cond = (ast.ItCond) it;
+      ast.Cmd body = (ast.Cmd) c;
+      return new Symbol(sym.CMD, new ast.Iterate(cond, body));
+    :}
+
+  | READ lvalue.l SEMI
+    {:
+      ast.LValue lv = (ast.LValue) l;
+      return new Symbol(sym.CMD, new ast.Read(lv));
+    :}
+
+  | PRINT exp.ex SEMI
+    {:
+      ast.Exp e = (ast.Exp) ex;
+      return new Symbol(sym.CMD, new ast.Print(e));
+    :}
+
+  | RETURN exp_list.el SEMI
+    {:
+      System.out.println("Return");
+      java.util.List<ast.Exp> list = (java.util.List<ast.Exp>) el;
+      return new Symbol(sym.CMD, new ast.Return(list));
+    :}
+
+  | lvalue.lv ASSIGN exp.e SEMI
+    {:
+      System.out.println("cmd: lvalue ASSIGN exp SEMI " + lv.getClass().getName());
+      ast.LValue lv2 = (ast.LValue) lv.value; // a
+      ast.Exp e2 = (ast.Exp) e.value; //5 
+      return new Symbol(sym.CMD, new ast.Assign(lv2, e2)); // (a,5)
+    :}
+
+  | ID.id2 LPAREN exps_opt.eo RPAREN lvalue_opt.lo SEMI
+    {:
+      String id = (String) id2;
+      System.out.println(" ID LPAREN exps_opt RPAREN lvalue_opt SEMI ");
+      java.util.List<ast.Exp> args = (java.util.List<ast.Exp>) eo;
+      java.util.List<ast.LValue> lvo = (java.util.List<ast.LValue>) lo;
+      return new Symbol(sym.CMD, new ast.CallStmt(id, args, lvo));
+    :}
+;
 
 exp_list
-    = exp_list COMMA exp 
-    | exp 
-    ;
+  = exp_list.el COMMA exp.ex
+    {:
+      System.out.println("exp_list");
+      java.util.List<ast.Exp> list = (java.util.List<ast.Exp>) el;
+      ast.Exp e = (ast.Exp) ex;
+      list.add(e);
+      return new Symbol(sym.EXP_LIST, list);
+    :}
+  | exp.ex
+    {:
+      System.out.println("exl_list exp");
+      java.util.List<ast.Exp> list = new java.util.ArrayList<>();
+      list.add((ast.Exp) ex);
+      return new Symbol(sym.EXP_LIST, list);
+    :}
+  ;
 
 exps_opt
-    = exps 
-    | /* vazio */ 
-    ;
+  = exps.ex
+    {:
+       System.out.println("exps_opt exps");
+      java.util.List<ast.Exp> list = (java.util.List<ast.Exp>) ex;
+      return new Symbol(sym.EXPS_OPT, list);
+    :}
+  | /* vazio */
+    {:
+      return new Symbol(sym.EXPS_OPT, new java.util.ArrayList<ast.Exp>());
+    :}
+  ;
 
 lvalue_opt
-    = LT lvalue_list GT 
-    | /* vazio */ 
-    ;
+  = LT lvalue_list.ll GT
+    {:
+      System.out.println("lvalue opt ");
+      java.util.List<ast.LValue> list = (java.util.List<ast.LValue>) ll;
+      return new Symbol(sym.LVALUE_OPT, list);
+    :}
+  | /* vazio */
+    {:
+      return new Symbol(sym.LVALUE_OPT, new java.util.ArrayList<ast.LValue>());
+    :}
+  ;
 
 lvalue_list
-    = lvalue_list COMMA lvalue 
-    | lvalue 
-    ;
+  = lvalue_list.ll COMMA lvalue.lva
+    {:
+      java.util.List<ast.LValue> list = (java.util.List<ast.LValue>) ll;
+      ast.LValue lv = (ast.LValue) lva;
+      list.add(lv);
+      return new Symbol(sym.LVALUE_LIST, list);
+    :}
+  | lvalue.lv
+    {:
+      System.out.println("lvalue_list lvalue");
+      java.util.List<ast.LValue> list = new java.util.ArrayList<>();
+      list.add((ast.LValue) lv);
+      return new Symbol(sym.LVALUE_LIST, list);
+   
+    :}
+  ;
 
 itcond
-    = ID COLON exp 
-    | exp 
-    ;
+  = ID.id2 COLON exp.ex
+    {:
+      String id = (String) id2;
+      ast.Exp e = (ast.Exp) ex;
+      return new Symbol(sym.ITCOND, new ast.ItCondId(id, e));
+    :}
+  | exp.ex
+    {:
+      System.out.println(" itcond - exp " );
+      ast.Exp e = (ast.Exp) ex;
+      return new Symbol(sym.ITCOND, new ast.ItCondExp(e));
+    :}
+  ;
+
 
 exp
-    = exp op exp 
-    | NOT exp 
-    | MINUS exp 
-    | lvalue 
-    | LPAREN exp RPAREN 
-    | NEW type exp_list_bracket 
-    | ID LPAREN exps_opt RPAREN LBRACKET exp RBRACKET 
-    | TRUE 
-    | FALSE 
-    | NULL 
-    | INT 
-    | FLOAT 
-    | CHAR 
-    ;
+  = exp.e op.opr exp.e2
+    {:
+      System.out.println(" exp op exp " );
+      System.out.println(" exp1: " + e );
+      System.out.println(" op: " + opr );
+      System.out.println(" exp2: " + e2 );
+      System.out.println("Op token class: " + opr.getClass().getName() + ", value: " + opr);
+      ast.Exp a = (ast.Exp) e;
+      String o = (String) opr;
+      ast.Exp b = (ast.Exp) e2;
+
+      switch (o) {
+        case "AND": return new Symbol(sym.EXP, new ast.And(a,b));
+        case "LT": return new Symbol(sym.EXP, new ast.Lt(a,b));
+        case "EQ": return new Symbol(sym.EXP, new ast.Eq(a,b));
+        case "NEQ": return new Symbol(sym.EXP, new ast.Neq(a,b));
+        case "PLUS": return new Symbol(sym.EXP, new ast.Add(a,b));
+        case "MINUS": return new Symbol(sym.EXP, new ast.Sub(a,b));
+        case "TIMES": return new Symbol(sym.EXP, new ast.Mul(a,b));
+        case "DIV": return new Symbol(sym.EXP, new ast.Div(a,b));
+        case "MOD": return new Symbol(sym.EXP, new ast.Mod(a,b));
+        default: throw new RuntimeException("Operador desconhecido: " + o);
+      }
+    :}
+
+  | NOT exp.ex
+    {:
+      ast.Exp e = (ast.Exp) ex;
+      return new Symbol(sym.EXP, new ast.NNot(e));
+    :}
+
+  | MINUS exp.ex
+    {:
+      ast.Exp e = (ast.Exp) ex;
+      return new Symbol(sym.EXP, new ast.Neg(e));
+    :}
+
+  | lvalue.lv
+    {:
+      System.out.println(" estou em exp - lvalue " );
+      return new Symbol(sym.EXP, lv);
+    :}
+
+  | LPAREN exp.ex RPAREN
+    {:
+      ast.Exp e = (ast.Exp) ex;
+      return new Symbol(sym.EXP, e);
+    :}
+
+  | NEW type.ty exp_list_bracket.el
+    {:
+      ast.TType t = (ast.TType) ty;
+      java.util.List<ast.Exp> elb = (java.util.List<ast.Exp>) el;
+      return new Symbol(sym.EXP, new ast.New(t, elb));
+    :}
+
+  | ID.id2 LPAREN exps_opt.eo RPAREN LBRACKET exp.ex RBRACKET
+    {:
+      String id = (String) id2;
+      java.util.List<ast.Exp> exps = (java.util.List<ast.Exp>) eo;
+      ast.Exp e = (ast.Exp) ex;
+      return new Symbol(sym.EXP, new ast.Call(id, exps, e));
+    :}
+
+  | TRUE
+    {:
+      return new Symbol(sym.EXP, new ast.NBool(true));
+    :}
+
+  | FALSE
+    {:
+      return new Symbol(sym.EXP, new ast.NBool(false));
+    :}
+
+  | NULL
+    {:
+      return new Symbol(sym.EXP, new ast.Null());
+    :}
+
+  | INT.i
+    {:
+      System.out.println("INT: "+ i);
+       return new Symbol(sym.EXP, new ast.NInt((Integer)i));
+    :}
+
+  | FLOAT.fl
+    {:
+      float f = ((Number) fl.value).floatValue();
+      return new Symbol(sym.EXP, new ast.NFloat(f));
+    :}
+
+  | CHAR.ch
+    {:
+      char c = (Character) ch.value;;
+      return new Symbol(sym.EXP, new ast.NChar(c));
+    :}
+;
+
 
 exp_list_bracket
-    = LBRACKET exp RBRACKET 
-    | /* vazio */ 
-    ;
+  = LBRACKET exp.ex RBRACKET
+    {:
+      java.util.List<ast.Exp> list = new java.util.ArrayList<>();
+      list.add((ast.Exp) ex);
+      return new Symbol(sym.EXP_LIST_BRACKET, list);
+    :}
+  | /* vazio */
+    {:
+      return new Symbol(sym.EXP_LIST_BRACKET, new java.util.ArrayList<ast.Exp>());
+    :}
+  ;
+
 
 op
-    = AND 
-    | LT 
-    | EQ 
-    | NEQ 
-    | PLUS 
-    | MINUS 
-    | TIMES 
-    | DIV 
-    | MOD 
-    ;
+  = AND    {: return new Symbol(sym.OP, "AND"); :}
+  | LT     {: return new Symbol(sym.OP, "LT"); :}
+  | EQ     {: return new Symbol(sym.OP, "EQ"); :}
+  | NEQ    {: return new Symbol(sym.OP, "NEQ"); :}
+  | PLUS   {: return new Symbol(sym.OP, "PLUS"); :}
+  | MINUS  {: return new Symbol(sym.OP, "MINUS"); :}
+  | TIMES  {: return new Symbol(sym.OP, "TIMES"); :}
+  | DIV    {: return new Symbol(sym.OP, "DIV"); :}
+  | MOD    {: return new Symbol(sym.OP, "MOD"); :}
+  ;
+
 
 lvalue
-    = ID 
-    | lvalue LBRACKET exp RBRACKET 
-    | lvalue DOT ID 
-    ;
+  = ID.id
+    {:
+      System.out.println("lvalue ID: " + id);
+      return new Symbol(sym.LVALUE, new ast.Var(id));
+    :}
+
+  | lvalue.lv LBRACKET exp.ex RBRACKET
+    {:
+      ast.LValue l = (ast.LValue) lv;
+      ast.Exp e = (ast.Exp) ex;
+      return new Symbol(sym.LVALUE, new ast.ArrayAccess(l, e));
+    :}
+
+  | lvalue.lv DOT ID.id2
+    {:
+      ast.LValue l = (ast.LValue) lv;
+      String id = (String) id2;
+      return new Symbol(sym.LVALUE, new ast.Dot(l, id));
+    :}
+  ;
 
 exps
-    = exp exp_list 
-    ;
+  = exp.e exp_list.el
+    {:
+      ast.Exp first = (ast.Exp) e;
+      java.util.List<ast.Exp> list = (java.util.List<ast.Exp>) el;
+      list.add(0, first);
+      return new Symbol(sym.EXPS, list);
+    :}
+  ;
 

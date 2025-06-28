@@ -89,7 +89,7 @@ whitespace = {newline} | [ \t\f]
     \'([^\'\\]|\\[ntrb\'\\]|\\[0-9]{3})\'   { return newToken(Terminals.CHAR); }
 
 
-    {id}                { return newToken(Terminals.ID); }
+    {id}                { return newToken(Terminals.ID, yytext());}
     {tyid}              { return newToken(Terminals.TYID); }
 
     "--".*              { /* ignora comentário de linha */ }
