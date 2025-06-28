@@ -20,9 +20,11 @@ public class Param extends Node {
         return this.type;
     }
 
+    @Override
     public String toString(){
         return "Param(" + id + " : " + type.toString() + ")";
     }
 
+    @Override
     public void accept(Visitor v){v.visit(this);}  //todas classes concretas precisam do accept
 }

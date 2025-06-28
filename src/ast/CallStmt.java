@@ -2,36 +2,37 @@ package ast;
 
 import java.util.List;
 import visitors.Visitor;
-// usada como comando: f(5);
-public class CallStmt extends Cmd {
-    private String funcName;
-    private List<Exp> args;
 
-    public CallStmt(String funcName, List<Exp> args) {
-        this.funcName = funcName;
+public class CallStmt extends Cmd {
+    private final String id;
+    private final List<Exp> args;
+    private final List<LValue> returns; 
+
+    public CallStmt(String id, List<Exp> args, List<LValue> returns) {
+        this.id = id;
         this.args = args;
+        this.returns = returns;
     }
 
-    public String getFuncName() {
-        return funcName;
+    public String getID() {
+        return id;
     }
 
     public List<Exp> getArgs() {
         return args;
     }
 
-   
+    public List<LValue> getReturns() {
+        return returns;
+    }
+
+    @Override
     public void accept(Visitor v) {
         v.visit(this);
     }
 
-   
+    @Override
     public String toString() {
-        String s = funcName + "(";
-        for (int i = 0; i < args.size(); i++) {
-            s += args.get(i);
-            if (i < args.size() - 1) s += ", ";
-        }
-        return s + ");";
+        return id + "(" + args + ")" + (returns.isEmpty() ? "" : " -> <" + returns + ">");
     }
 }

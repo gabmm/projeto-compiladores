@@ -2,7 +2,7 @@ package ast;
 
 import visitors.Visitor;
 
-public class Decl extends Node {
+public class Decl {
     private String id;
     private TType type;
 

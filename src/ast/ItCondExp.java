@@ -3,21 +3,23 @@ package ast;
 import visitors.Visitor;
 
 public class ItCondExp extends ItCond {
-    private Exp exp;
+    private Exp cond;
 
-    public ItCondExp(Exp exp) {
-        this.exp = exp;
+    public ItCondExp(Exp cond) {
+        this.cond = cond;
     }
 
-    public Exp getExp() { return exp; }
+    public Exp getCond() {
+        return cond;
+    }
 
-    
+    @Override
+    public String toString() {
+        return cond.toString();
+    }
+
+    @Override
     public void accept(Visitor v) {
         v.visit(this);
-    }
-
-
-    public String toString() {
-        return exp.toString();
     }
 }

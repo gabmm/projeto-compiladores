@@ -1,8 +1,9 @@
 package ast;
 
+import visitors.Visitable;
 import visitors.Visitor;
 
-public abstract class Node extends beaver.Symbol {
+public abstract class Node extends beaver.Symbol implements Visitable {
 
     public Node(){}
 

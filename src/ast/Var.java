@@ -1,7 +1,7 @@
 package ast;
 import visitors.Visitor;
 
-public class Var extends Exp {
+public class Var extends LValue {
 
     private String name;
 

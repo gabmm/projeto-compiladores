@@ -4,21 +4,28 @@ import visitors.Visitor;
 
 public class ItCondId extends ItCond {
     private String id;
-    private Exp exp;
+    private Exp cond;
 
-    public ItCondId(String id, Exp exp) {
+    public ItCondId(String id, Exp cond) {
         this.id = id;
-        this.exp = exp;
+        this.cond = cond;
     }
 
-    public String getId() { return id; }
-    public Exp getExp() { return exp; }
+    public String getID() {
+        return id;
+    }
 
+    public Exp getCond() {
+        return cond;
+    }
+
+    @Override
+    public String toString() {
+        return id + " : " + cond;
+    }
+
+    @Override
     public void accept(Visitor v) {
         v.visit(this);
-    }
-
-    public String toString() {
-        return id + ": " + exp;
     }
 }

@@ -1,7 +1,9 @@
 package ast;
 
-public abstract class ItCond {
-    public abstract void accept(visitors.Visitor v);
+import visitors.Visitor;
+
+public abstract class ItCond extends Cmd {
+    public abstract void accept(Visitor v);
 }
 
 
