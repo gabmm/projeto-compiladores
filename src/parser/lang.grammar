@@ -18,7 +18,7 @@
 %typeof def_list = "java.util.List<ast.Def>";
 %typeof def = "Def";
 %typeof data = "Data";
-%typeof decl_list = "java.util.List<ast.Def>";
+%typeof decl_list = "java.util.List<ast.Decl>";
 %typeof decl = "ast.Decl";
 %typeof fun = "Fun";
 %typeof params_opt = "java.util.List<ast.Param>";
@@ -31,6 +31,7 @@
 %typeof block = "Block";
 %typeof cmd_list = "java.util.List<ast.Cmd>";
 %typeof cmd = "Cmd";
+%typeof exp_list_bracket = "java.util.List<ast.Exp>";
 %typeof exp_list = "java.util.List<ast.Exp>";
 %typeof exps_opt = "java.util.List<ast.Exp>";
 %typeof exp = "Exp";
@@ -41,7 +42,7 @@
 %typeof op = "java.lang.String";
 %typeof ID = "java.lang.String";
 %typeof INT = "Integer";
-
+%typeof TYID = "java.lang.String";
 
 %goal Prog;
 
@@ -81,9 +82,23 @@ def
 data
   = ABSTRACT DATA TYID.id LBRACE decl_list.dl RBRACE
     {:
-      String name = (String) id.value;
-      return new Symbol(sym.DATA, new ast.AbstractData(name, dl));
+      String name = (String) id;
+      java.util.List<ast.Decl> decls = new java.util.ArrayList<>();
+      java.util.List<ast.Fun> funs = new java.util.ArrayList<>();
+      for (ast.Def def : dl) {
+          if (def instanceof ast.Decl)
+              decls.add((ast.Decl) def);
+          else if (def instanceof ast.Fun)
+              funs.add((ast.Fun) def);
+      }
+        return new Symbol(sym.DATA, new ast.Data(name, true, decls, funs));
     :}
+    | DATA TYID.id LBRACE decl_list.dl RBRACE
+    {: 
+      java.util.List<ast.Decl> decls = (java.util.List<ast.Decl>) dl;
+      return new Symbol(sym.DATA, new ast.Data(id, decls));
+    :}
+
 ;
 
 decl_or_fun
@@ -94,8 +109,7 @@ decl_or_fun
 decl_list
   = decl_list.dl decl_or_fun.dof
     {:
-      var def = (ast.Def) dof.value;
-      dl.add(def);
+      dl.add( (ast.Decl) dof);
       return new Symbol(sym.DECL_LIST, dl);
     :}
   | decl_or_fun.dof
@@ -142,7 +156,7 @@ params_opt
 params
   = ID.id DCOLON type.t id_type_list.itl
     {:
-      System.out.println("params ");
+      System.out.println("params: " + id + " " + t + " " + itl );
       ast.Param param = new ast.Param(id, t);
       itl.add(0, param);
       return new Symbol(sym.PARAMS, itl);
@@ -218,7 +232,7 @@ btype
   | TYCHAR  {: return new Symbol(sym.BTYPE, new ast.TyChar()); :}
   | TYBOOL  {: return new Symbol(sym.BTYPE, new ast.TyBool()); :}
   | TYFLOAT {: return new Symbol(sym.BTYPE, new ast.TyFloat()); :}
-  | TYID.id {: return new Symbol(sym.BTYPE, new ast.TyId((String) id.value)); :}
+  | TYID.id {: return new Symbol(sym.BTYPE, new ast.TyId(id)); :}
   ;
 
 
@@ -281,6 +295,7 @@ cmd
 
   | PRINT exp.ex SEMI
     {:
+      System.out.println("Print " + ex + ";");
       return new Symbol(sym.CMD, new ast.Print(ex));
     :}
 
@@ -410,8 +425,8 @@ exp
 
   | lvalue.lv
     {:
-      System.out.println(" exp - lvalue " + lv );
-      return new Symbol(sym.EXP, lv);
+      System.out.println(" exp - lvalue " + lv.value );
+      return new Symbol(sym.EXP, lv.value);
     :}
 
   | LPAREN exp.e RPAREN
@@ -421,6 +436,7 @@ exp
 
   | NEW type.ty exp_list_bracket.el
     {:
+     System.out.println("NEW  "+ ty + " " + el);
       java.util.List<ast.Exp> elb = (java.util.List<ast.Exp>) el;
       return new Symbol(sym.EXP, new ast.New(ty, elb));
     :}
@@ -469,7 +485,7 @@ exp_list_bracket
   = LBRACKET exp.ex RBRACKET
     {:
       java.util.List<ast.Exp> list = new java.util.ArrayList<>();
-      list.add(ex);
+      list.add((ast.Exp) ex);
       return new Symbol(sym.EXP_LIST_BRACKET, list);
     :}
   | /* vazio */
@@ -501,6 +517,7 @@ lvalue
 
   | lvalue.lv LBRACKET exp.e RBRACKET
     {:
+      System.out.println("lvalue []: " + lv + " " + e);
       return new Symbol(sym.LVALUE, new ast.ArrayAccess(lv, e));
     :}
 

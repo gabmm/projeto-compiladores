@@ -2,18 +2,14 @@ package ast;
 
 import visitors.Visitor;
 
-public class Decl {
-    private String id;
+public class Decl extends Def{
     private TType type;
 
     public Decl(String id, TType type) {
-        this.id = id;
+        super (id);
         this.type = type;
     }
 
-    public String getid() {
-        return id;
-    }
 
     public TType getType() {
         return type;

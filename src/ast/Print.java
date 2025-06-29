@@ -1,7 +1,7 @@
 package ast;
 import visitors.Visitor;
  
-public class Print extends Node {
+public class Print extends Cmd {
 
     private Exp e; 
 
