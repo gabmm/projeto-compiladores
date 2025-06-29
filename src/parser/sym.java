@@ -77,4 +77,5 @@ public interface sym {
     short EXP_LIST_BRACKET = 126;
     short ID_TYPE_LIST = 127;
     short OP = 128;
+    short DECL_FUN_LIST = 129;
 }
