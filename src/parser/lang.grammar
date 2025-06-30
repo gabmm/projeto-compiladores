@@ -46,6 +46,14 @@
 %typeof decl_fun_list = "java.util.List<ast.Def>";
 %typeof decl_or_fun = "Def";
 
+%left AND;
+%left EQ, NEQ;
+%nonassoc LT;
+%left PLUS, MINUS;
+%left TIMES, DIV, MOD;
+%right NOT;
+%left DOT, LBRACKET;
+
 %goal Prog;
 
 Prog
@@ -257,13 +265,6 @@ block
       System.out.println("block ");
       return new Symbol(sym.BLOCK, new ast.Block(cl));
     :}
-
-    | /* vazio */ 
-    {: 
-    System.out.println("block vazio");
-     return new Symbol(sym.BLOCK, new ast.Block(new java.util.ArrayList<ast.Cmd>()));
-     :}
-
   ;
 
 cmd_list
@@ -285,7 +286,7 @@ cmd
   = block.b
     {:
       System.out.println("cmd block: " );
-      return new Symbol(sym.CMD, b.value);
+      return new Symbol(sym.CMD, b);
     :}
 
   | IF LPAREN exp.e RPAREN cmd.c
@@ -437,8 +438,8 @@ exp
 
   | lvalue.lv
     {:
-      System.out.println(" exp - lvalue " + lv.value );
-      return new Symbol(sym.EXP, lv.value);
+      System.out.println(" exp - lvalue " + lv );
+      return new Symbol(sym.EXP, lv);
     :}
 
   | LPAREN exp.e RPAREN
