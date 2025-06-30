@@ -333,31 +333,28 @@ cmd
     :}
 ;
 
+exps_opt
+  = exp_list.el
+    {:
+      return new Symbol(sym.EXPS_OPT, el);
+    :}
+  | /* vazio */
+    {:
+      return new Symbol(sym.EXPS_OPT, new java.util.ArrayList<ast.Exp>());
+    :}
+  ;
+
 exp_list
   = exp_list.el COMMA exp.ex
     {:
-      System.out.println("exp_list");
       el.add(ex);
       return new Symbol(sym.EXP_LIST, el);
     :}
   | exp.ex
     {:
-      System.out.println("exl_list exp");
       java.util.List<ast.Exp> list = new java.util.ArrayList<>();
       list.add(ex);
       return new Symbol(sym.EXP_LIST, list);
-    :}
-  ;
-
-exps_opt
-  = exps.ex
-    {:
-       System.out.println("exps_opt exps");
-      return new Symbol(sym.EXPS_OPT, ex);
-    :}
-  | /* vazio */
-    {:
-      return new Symbol(sym.EXPS_OPT, new java.util.ArrayList<ast.Exp>());
     :}
   ;
 
@@ -539,15 +536,6 @@ lvalue
   | lvalue.lv DOT ID.id
     {:
       return new Symbol(sym.LVALUE, new ast.Dot(lv, id));
-    :}
-  ;
-
-exps
-  = exp.e exp_list.el
-    {:
-      java.util.List<ast.Exp> list = (java.util.List<ast.Exp>) el;
-      list.add(0, e);
-      return new Symbol(sym.EXPS, list);
     :}
   ;
 
