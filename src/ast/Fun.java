@@ -7,9 +7,9 @@ public class Fun extends Def {
 
     private List<TType> type; 
     private List<Param> params;
-    private Block body;
+    private Cmd body;
 
-    public Fun(String id, List<TType> type, List<Param> params, Block body){
+    public Fun(String id, List<TType> type, List<Param> params, Cmd body){
         super(id);
         this.type = type;
         this.params = params;
@@ -18,7 +18,7 @@ public class Fun extends Def {
 
     public List<TType> getType() { return type; }
     public List<Param> getParams() { return params; }
-    public Block getBody() { return body; }
+    public Cmd getBody() { return body; }
 
     @Override
     public String toString(){

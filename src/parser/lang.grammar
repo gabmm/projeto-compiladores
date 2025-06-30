@@ -44,6 +44,7 @@
 %typeof INT = "Integer";
 %typeof TYID = "java.lang.String";
 %typeof decl_fun_list = "java.util.List<ast.Def>";
+%typeof decl_or_fun = "Def";
 
 %goal Prog;
 
@@ -110,7 +111,7 @@ decl_fun_list
   :}
   | decl_or_fun.df
   {:
-    System.out.println("decl fun lista para decl fun");
+    System.out.println("decl fun lista para decl fun: " + df);
     var list = new ArrayList<ast.Def>();
     list.add((ast.Def) df);
     return new Symbol(sym.DECL_FUN_LIST, list);
@@ -145,19 +146,17 @@ decl
 ;
 
 fun
-  = ID.id LPAREN params_opt.pp RPAREN types_opt.tt block.bl
+  = ID.id LPAREN params_opt.pp RPAREN types_opt.tt cmd.c
     {:
       System.out.println("Fun");
-      String               name   = id;
+      String                      name   = id;
       java.util.List<ast.Param>   params = pp;
       java.util.List<ast.TType>   types  = tt;
-      ast.Block             body   = bl;
-
-      List<ast.TType> ret = types.isEmpty() ? null : java.util.List.of(types.get(0));
+      ast.Cmd                     body   = c; 
+      List<ast.TType> ret = types; 
 
       return new Symbol(sym.FUN, new ast.Fun(name, ret, params, body));
     :}
-   
 ;
 
 params_opt
