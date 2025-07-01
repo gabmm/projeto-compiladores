@@ -59,7 +59,7 @@
 Prog
   = def_list.dl
     {:
-      System.out.println("Prog");
+
       return new Symbol(sym.PROG, new ast.Prog(dl));
     :}
 ;
@@ -67,13 +67,13 @@ Prog
 def_list
   = def_list.dl def.d
     {:
-      System.out.println("def list");
+
       dl.add(d);
       return new Symbol(sym.DEF_LIST, dl);
     :}
   | def.d
     {:
-      System.out.println("def lista para def");
+
       var list = new java.util.ArrayList<ast.Def>();
       list.add(d);
       return new Symbol(sym.DEF_LIST, list);
@@ -82,10 +82,10 @@ def_list
 
 def
   = data.d {: 
-  System.out.println("def para data ");
+
   return new Symbol(sym.DEF, d); :}
   | fun.f  {: 
-  System.out.println("def para fun ");
+
   return new Symbol(sym.DEF, f); :}
 ;
 
@@ -119,7 +119,7 @@ decl_fun_list
   :}
   | decl_or_fun.df
   {:
-    System.out.println("decl fun lista para decl fun: " + df);
+
     var list = new ArrayList<ast.Def>();
     list.add((ast.Def) df);
     return new Symbol(sym.DECL_FUN_LIST, list);
@@ -148,7 +148,7 @@ decl_list
 decl
   = ID.id DCOLON type.t SEMI
     {:
-      System.out.println(" decl");
+
       return new Symbol(sym.DECL, new ast.Decl(id,  t));
     :}
 ;
@@ -156,7 +156,7 @@ decl
 fun
   = ID.id LPAREN params_opt.pp RPAREN types_opt.tt cmd.c
     {:
-      System.out.println("Fun");
+
       String                      name   = id;
       java.util.List<ast.Param>   params = pp;
       java.util.List<ast.TType>   types  = tt;
@@ -170,7 +170,7 @@ fun
 params_opt
   = params.p
     {:
-      System.out.println("params_opt cheia ");
+
       return new Symbol(sym.PARAMS_OPT, p);
     :}
   ;
@@ -179,7 +179,7 @@ params_opt
 params
   = ID.id DCOLON type.t id_type_list.itl
     {:
-      System.out.println("params: " + id + " " + t + " " + itl );
+
       ast.Param param = new ast.Param(id, t);
       itl.add(0, param);
       return new Symbol(sym.PARAMS, itl);
@@ -193,14 +193,14 @@ params
 id_type_list
   = COMMA ID.id DCOLON type.t id_type_list.itl
     {:
-      System.out.println("id_type_list: COMMA ID :: type ...");
+
       String id2 = (String) id;
       itl.add(0, new ast.Param(id2, t)); 
       return new Symbol(sym.ID_TYPE_LIST, itl);
     :}
   | /* vazio */
     {:
-      System.out.println("id_type_list: vazio");
+
       return new Symbol(sym.ID_TYPE_LIST, new java.util.ArrayList<ast.Param>());
     :}
 ;
@@ -212,7 +212,7 @@ types_opt
     :}
   | /* vazio */
     {:
-      System.out.println("type_opts vazia ");
+
       return new Symbol(sym.TYPES_OPT, new java.util.ArrayList<ast.TType>());
     :}
   ;
@@ -237,12 +237,12 @@ type_list
 type
   = type.t LBRACKET RBRACKET
     {:
-      System.out.println("type: []");
+
       return new Symbol(sym.TYPE, new ast.TTypeArray(t));
     :}
   | btype.b
     {:
-      System.out.println("type: base: " + b);
+
       return new Symbol(sym.TYPE, b);
     :}
 ;
@@ -262,7 +262,7 @@ btype
 block
   = LBRACE cmd_list.cl RBRACE 
     {:
-      System.out.println("block ");
+
       return new Symbol(sym.BLOCK, new ast.Block(cl));
     :}
   ;
@@ -270,13 +270,13 @@ block
 cmd_list
   = cmd_list.cl cmd.c
     {:
-      System.out.println("cmd_list com cmd");
+
       cl.add( c);
       return new Symbol(sym.CMD_LIST, cl);
     :}
   | /* vazio */
     {:
-      System.out.println("cmd_list vazio");
+
       return new Symbol(sym.CMD_LIST, new java.util.ArrayList<ast.Cmd>());
     :}
   ;
@@ -285,7 +285,7 @@ cmd_list
 cmd
   = block.b
     {:
-      System.out.println("cmd block: " );
+
       return new Symbol(sym.CMD, b);
     :}
 
@@ -311,25 +311,25 @@ cmd
 
   | PRINT exp.ex SEMI
     {:
-      System.out.println("Print " + ex + ";");
+
       return new Symbol(sym.CMD, new ast.Print(ex));
     :}
 
   | RETURN exp_list.el SEMI
     {:
-      System.out.println("Return");
+
       return new Symbol(sym.CMD, new ast.Return(el));
     :}
 
   | lvalue.lv ASSIGN exp.e SEMI
     {:
-      System.out.println("cmd: lvalue ASSIGN exp SEMI " + lv.getClass().getName());
+
       return new Symbol(sym.CMD, new ast.Assign(lv, e)); // (a,5)
     :}
 
   | ID.id LPAREN exps_opt.eo RPAREN lvalue_opt.lo SEMI
     {:
-      System.out.println(" ID LPAREN exps_opt RPAREN lvalue_opt SEMI ");
+
       return new Symbol(sym.CMD, new ast.CallStmt(id, eo, lo));
     :}
 ;
@@ -362,7 +362,7 @@ exp_list
 lvalue_opt
   = LT lvalue_list.ll GT
     {:
-      System.out.println("lvalue opt ");
+
       return new Symbol(sym.LVALUE_OPT, ll);
     :}
   | /* vazio */
@@ -379,7 +379,7 @@ lvalue_list
     :}
   | lvalue.lv
     {:
-      System.out.println("lvalue_list lvalue");
+
       java.util.List<ast.LValue> list = new java.util.ArrayList<>();
       list.add(lv);
       return new Symbol(sym.LVALUE_LIST, list);
@@ -394,7 +394,7 @@ itcond
     :}
   | exp.e
     {:
-      System.out.println(" itcond - exp " );
+
       return new Symbol(sym.ITCOND, new ast.ItCondExp(e));
     :}
   ;
@@ -403,11 +403,11 @@ itcond
 exp
   = exp.e op.opr exp.e2
     {:
-      System.out.println(" exp op exp " );
-      System.out.println(" exp1: " + e );
-      System.out.println(" op: " + opr );
-      System.out.println(" exp2: " + e2 );
-      System.out.println("Op token class: " + opr.getClass().getName() + ", value: " + opr);
+
+
+
+
+
       ast.Exp a =  e;
       String o = opr;
       ast.Exp b =  e2;
@@ -438,7 +438,7 @@ exp
 
   | lvalue.lv
     {:
-      System.out.println(" exp - lvalue " + lv );
+
       return new Symbol(sym.EXP, lv);
     :}
 
@@ -449,7 +449,7 @@ exp
 
   | NEW type.ty exp_list_bracket.el
     {:
-     System.out.println("NEW  "+ ty + " " + el);
+
       java.util.List<ast.Exp> elb = (java.util.List<ast.Exp>) el;
       return new Symbol(sym.EXP, new ast.New(ty, elb));
     :}
@@ -476,7 +476,7 @@ exp
 
   | INT.i
     {:
-      System.out.println("INT: "+ i);
+
        return new Symbol(sym.EXP, new ast.NInt((Integer)i));
     :}
 
@@ -524,13 +524,13 @@ op
 lvalue
   = ID.id
     {:
-      System.out.println("lvalue ID: " + id);
+
       return new Symbol(sym.LVALUE, new ast.Var(id));
     :}
 
   | lvalue.lv LBRACKET exp.e RBRACKET
     {:
-      System.out.println("lvalue []: " + lv + " " + e);
+
       return new Symbol(sym.LVALUE, new ast.ArrayAccess(lv, e));
     :}
 
