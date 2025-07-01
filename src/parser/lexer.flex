@@ -86,11 +86,26 @@ whitespace = {newline} | [ \t\f]
 
     {digit}+            { return newToken(Terminals.INT, Integer.parseInt(yytext())); }
     {digit}*"."{digit}+ { return newToken(Terminals.FLOAT, Double.parseDouble(yytext())); }
-    \'([^\'\\]|\\[ntrb\'\\]|\\[0-9]{3})\'   { return newToken(Terminals.CHAR); }
+    \'([^\'\\]|\\[ntrb\'\\]|\\[0-9]{3})\'   {
+        String content = yytext().substring(1, yylength() - 1); // Pega o que está dentro das '', ex: 'a' ou '\\n'
+        char charValue;
+        if (content.charAt(0) == '\\') { // Se começar com '\', pode ser que o proximo seja
+            switch (content.charAt(1)) { // um caractere de escape, tipo \n,\t...que não são um char
+                case 'n': charValue = '\n'; break;
+                case 't': charValue = '\t'; break;
+                case 'r': charValue = '\r'; break;
+                case 'b': charValue = '\b'; break;
+                default: charValue = content.charAt(1);
+            }
+        } else {
+            charValue = content.charAt(0); // Se for um caractere normal
+        }
+        return newToken(Terminals.CHAR, new Character(charValue));
+    }
 
 
     {id}                { return newToken(Terminals.ID, yytext());}
-    {tyid}              { return newToken(Terminals.TYID); }
+    {tyid}              { return newToken(Terminals.TYID,yytext());}
 
     "--".*              { /* ignora comentário de linha */ }
     "{-"                { yybegin(COMMENT); }
