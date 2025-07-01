@@ -4,6 +4,8 @@
 !README.md
 !.gitignore
 !Makefile
+!/tests/
+!/tests/**
 
 # Ignora arquivos gerados dentro de src
 /src/parser/Lexer.java
