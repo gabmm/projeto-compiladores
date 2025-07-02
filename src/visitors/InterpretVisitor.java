@@ -21,13 +21,23 @@ public class InterpretVisitor extends Visitor {
         this.operands = new Stack<>();
         this.returnMode = false;
     }
- 
-    private Object findVariable(String varName) { // encontra valor atual da variável
+
+    private Object findVariableAux(String varName){
         for (int i = env.size() - 1; i >= 0; i--) {
             if (env.get(i).containsKey(varName)) {
                 return env.get(i).get(varName);
             }
         }
+        return null;
+    }
+ 
+    private Object findVariable(String varName) { // encontra valor atual da variável
+        Object returnValue = findVariableAux(varName);
+
+        if (returnValue != null){
+            return returnValue;
+        }
+
         throw new RuntimeException("Erro: Variavel '" + varName + "' nao declarada.");
     }
 
@@ -48,6 +58,15 @@ public class InterpretVisitor extends Visitor {
             }
         }
         throw new RuntimeException("Erro: Variavel '" + varName + "' nao declarada para atribuicao.");
+    }
+
+    private void addOrUpdateVariable(String varName, Object value){
+        Object returnValue = findVariableAux(varName);
+        if (returnValue != null){
+            updateVariable(varName, value);
+        } else {
+            addVariable(varName, value);
+        }
     }
 
     private boolean isInteger(Object number) {
@@ -122,8 +141,19 @@ public class InterpretVisitor extends Visitor {
     public void visit(Assign node) {
         System.out.println("Visitando Assign...");
         node.getRhs().accept(this);
-        node.getLhs().accept(this);
-        env.peek().put((String) operands.pop(), operands.pop()); // aqui é add var ou update var?
+        LValue lv = node.getLhs();
+        String varName = "";
+        if (lv instanceof Var){
+            Var var = (Var) lv;
+            varName = var.getName();
+        } else if (lv instanceof ArrayAccess) {
+            ArrayAccess arrAcc = (ArrayAccess) lv;
+            varName = arrAcc.toString();
+        } else if (lv instanceof Dot) {
+            Dot dot = (Dot) lv;
+            varName = dot.toString();
+        }
+        addOrUpdateVariable(varName, operands.pop());
     }
     
     @Override
