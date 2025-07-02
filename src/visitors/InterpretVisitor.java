@@ -52,6 +52,7 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(Prog node) {
+        System.out.println("Visitando prog...");
         // percorre todas as definições:os nomes das funções e tipos de dados.
         for (Def def : node.getDefs()) {
             if (def instanceof Fun) {
@@ -78,6 +79,7 @@ public class InterpretVisitor extends Visitor {
     
    @Override
     public void visit(Fun node) {
+        System.out.println("Visitando fun...");
         HashMap<String, Object> localEnv = new HashMap<>();
         List<Param> params = node.getParams();
         for (int i = params.size() - 1; i >= 0; i--) {
@@ -98,12 +100,18 @@ public class InterpretVisitor extends Visitor {
    
     @Override
     public void visit(Block node) {
-
+        System.out.println("Visitando block...");
+        for (Cmd cmd : node.getCmds()) {
+            cmd.accept(this);
+        }
     }
     
     @Override
     public void visit(CmdList node) {
-
+        System.out.println("Visitando cmdlist...");
+        for (Cmd cmd : node.getCommands()) {
+            cmd.accept(this);
+        }
     }
     
     @Override
@@ -159,16 +167,24 @@ public class InterpretVisitor extends Visitor {
     }
     
     @Override
-    public void visit(NInt node) {  }
+    public void visit(NInt node) {
+        operands.push(Integer.valueOf(node.getValue()));
+    }
 
     @Override
-    public void visit(NFloat node) {  }
+    public void visit(NFloat node) {
+        operands.push(Float.valueOf(node.getValue()));
+    }
 
     @Override
-    public void visit(NBool node) {  }
+    public void visit(NBool node) {
+        operands.push(Boolean.valueOf(node.getValue()));
+    }
 
     @Override
-    public void visit(NChar node) {  }
+    public void visit(NChar node) {
+        operands.push(Character.valueOf(node.getValue()));
+    }
 
     @Override
     public void visit(Null node) {  }
@@ -199,7 +215,10 @@ public class InterpretVisitor extends Visitor {
     @Override public void visit(TyId node) {}
     @Override public void visit(TTypeArray node) {}
     @Override public void visit(ExpList node) {}
-    @Override public void visit(Cmd node) {}
+
+    @Override
+    public void visit(Cmd node) {
+    }
     @Override public void visit(ItCond node) {}
     @Override public void visit(ItCondExp node) { }
     @Override public void visit(ItCondId node) { }
@@ -257,7 +276,9 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(Print node) {
-
+        System.out.println("Visitando print...");
+        node.getExpr().accept(this);
+        System.out.println(operands.pop().toString());
     }
 
     @Override
