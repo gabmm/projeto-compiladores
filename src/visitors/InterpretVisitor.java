@@ -197,6 +197,14 @@ public class InterpretVisitor extends Visitor {
     @Override
     public void visit(Or node) {
         System.out.println("Visitando Or... (nem existe...)");
+        node.getLeft().accept(this);
+        boolean left = (Boolean) operands.pop();
+        if (left) { 
+            operands.push(true);
+            return;
+        }
+        node.getRight().accept(this);
+        operands.push(operands.pop());
     }
 
     @Override
@@ -249,52 +257,84 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(Null node) {
-
+        System.out.println("Visitando Null...");
+        operands.push(null); 
     }
 
     @Override
     public void visit(New node) {
+        System.out.println("Visitando New...");
       
+            if (node.getType() instanceof TyId) {
+            String dataName = ((TyId) node.getType()).getName();
+            Data dataDef = dataDefs.get(dataName);
+            HashMap<String, Object> newInstance = new HashMap<>();
+            for (Decl field : dataDef.getDecls()) {
+                newInstance.put(field.getName(), null);
+            }
+            operands.push(newInstance);
+        } else if (node.getType() instanceof TTypeArray) {
+            node.getDimensions().get(0).accept(this);
+            int size = (Integer) operands.pop();
+            operands.push(new Object[size]);
+        }
+       
     }
 
     @Override
     public void visit(ArrayAccess node) {
-
+        System.out.println("Visitando ArrayAccess...");
+        node.getArray().accept(this);
+        node.getIndex().accept(this);
+        int index = (Integer) operands.pop();
+        Object array = operands.pop();
+        if (array instanceof List) {
+            operands.push(((List) array).get(index));
+        } else if (array.getClass().isArray()) {
+            operands.push(java.lang.reflect.Array.get(array, index)); // reflect.array retorna um Objeto genérico
+        }                                                             // pois não há como saber se o vetor é de inteios, booleanos...
     }
 
     @Override
     public void visit(Dot node) {
-
+        System.out.println("Visitando Dot...");
+        node.getBase().accept(this);
+        HashMap<String, Object> object = (HashMap<String, Object>) operands.pop();
+        operands.push(object.get(node.getField()));
     }
     
     @Override
     public void visit(Data node) {
-        
+        if (!dataDefs.containsKey(node.getName())) { // armazena decl
+            dataDefs.put(node.getName(), node);
+        }
+        List<Fun> func = node.getFuns();
+        if (func != null && !func.isEmpty()) { // Abstract data - armazena  fun 
+            String name = node.getName();
+            for (Fun f : func) {
+                String funcDotName = name + "." + f.getName(); // para metodos função.nome()
+                funcs.put(funcDotName, f);
+            }
     }
-
-    @Override public void visit(TyInt node) {}
-    @Override public void visit(TyChar node) {}
-    @Override public void visit(TyBool node) {}
-    @Override public void visit(TyFloat node) {}
-    @Override public void visit(TyId node) {}
-    @Override public void visit(TTypeArray node) {}
-    @Override public void visit(ExpList node) {}
+    }
+    @Override 
+    public void visit(ItCondExp node) {
+        node.getCond().accept(this);
+     }
+    @Override 
+    public void visit(ItCondId node) {
+        node.getCond().accept(this);
+     }
 
     @Override
-    public void visit(Cmd node) {
-    }
-    @Override public void visit(ItCond node) {}
-    @Override public void visit(ItCondExp node) { }
-    @Override public void visit(ItCondId node) { }
-    @Override public void visit(Param node) {}
-    
-    @Override
-    public void visit(Attr node) {
+    public void visit(Attr node) { // acho que não precisa dessa, seria igual o assign 
         
     }
     @Override 
-     public void visit(FieldAccess node) {
-
+     public void visit(FieldAccess node) { // acho que não precisa dessa, seria mesma coisa que o DOT
+        node.getTarget().accept(this);
+        HashMap<String, Object> ob = ( HashMap<String, Object>) operands.pop();
+        operands.push(ob.get(node.getField()));
     }
 
     @Override
@@ -355,7 +395,15 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(Lt node) {
-        
+        try {
+            node.getLeft().accept(this);
+            node.getRight().accept(this);
+            Number right = (Number) operands.pop();
+            Number left = (Number) operands.pop();
+            operands.push(left.floatValue() < right.floatValue());
+        } catch (Exception e) {
+            throw new RuntimeException( " (" + node.getLine() + ", " + node.getCol() + ") " + e.getMessage() );
+        }
     }
 
     @Override
@@ -378,7 +426,7 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(Decl node) {
-
+        addVariable(node.getName(), null);
     }
 
     @Override
@@ -389,14 +437,83 @@ public class InterpretVisitor extends Visitor {
     }
 
     @Override
-
     public void visit(Iterate node) {
-       
+        ItCond cond = node.getCondition(); 
+        if (cond instanceof ItCondExp) { // se o loop for quantidade
+            ItCondExp itExp = (ItCondExp) cond;
+            itExp.getCond().accept(this); 
+            int times = (Integer) operands.pop(); // Pega qtd de vezes
+            for (int i = 0; i < times; i++) { // executa a qtd de vezes necessária
+                node.getBody().accept(this); 
+            }
+        } else if (cond instanceof ItCondId) { // se for item: vetor 
+            ItCondId itId = (ItCondId) cond;
+            itId.getCond().accept(this);
+            Object collection = operands.pop();
+            String name = itId.getID(); 
+
+            if (collection instanceof List) { // função com multiplos valores // iterate (item : divmod(10, 3)) {
+                                                                              //      print item;
+                                                                              //  }
+                env.push(new HashMap<>()); 
+                addVariable(name, null); 
+                for (Object item : (List) collection) {
+                    updateVariable(name, item);
+                    node.getBody().accept(this);
+                }
+                env.pop();
+            } else if (collection != null && collection.getClass().isArray()) { // quando array é criado pelo new
+                    env.push(new HashMap<>());                                  // vet = new Int[3];
+                    addVariable(name, null);                               // iterate (n : vet) {
+                    int length = java.lang.reflect.Array.getLength(collection);  //     print n;
+                    for (int i = 0; i < length; i++) {                           // }                                 
+                    Object item = java.lang.reflect.Array.get(collection, i);
+                    updateVariable(name, item); 
+                    node.getBody().accept(this);
+                }
+                env.pop();
+            }
+        }
     }
 
     
     @Override
-    public void visit(Call node) {
+    public void visit(Call node) {   
+        try {
+            Fun fun = funcs.get(node.getFuncName());
+            for (Exp exp: node.getArgs()) {
+                exp.accept(this);
+            }
+            
+            fun.accept(this);
+            Object returnValue = operands.pop(); // pode ser um único objeto ou uma lista
+            node.getIndex().accept(this);
+            int index = (Integer) operands.pop();
 
-}
+            if(returnValue instanceof List){ // se for multiplus retornos
+                operands.push(((List) returnValue).get(index));
+            }
+            else if (index == 0){ // se for um único returno
+                operands.push(returnValue);
+            } else {
+                throw new RuntimeException("indice de retorno fora dos limites para função com retorno único.");
+            }
+                
+        } catch (Exception e) {
+            throw new RuntimeException( " (" + node.getLine() + ", " + node.getCol() + ") " + e.getMessage() );
+        }
+    }
+
+    
+    @Override public void visit(TyInt node) {}
+    @Override public void visit(TyChar node) {}
+    @Override public void visit(TyBool node) {}
+    @Override public void visit(TyFloat node) {}
+    @Override public void visit(TyId node) {}
+    @Override public void visit(TTypeArray node) {}
+    @Override public void visit(ExpList node) {}
+    @Override public void visit(Cmd node) { }
+    @Override public void visit(ItCond node) {}
+    @Override public void visit(Param node) {}
+    
 }
