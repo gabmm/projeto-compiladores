@@ -449,9 +449,13 @@ exp
 
   | NEW type.ty exp_list_bracket.el
     {:
-
       java.util.List<ast.Exp> elb = (java.util.List<ast.Exp>) el;
-      return new Symbol(sym.EXP, new ast.New(ty, elb));
+      if (elb.size() != 0) {
+        TTypeArray tarray = new TTypeArray(ty);
+        return new Symbol(sym.EXP, new ast.New(tarray, elb));
+      } else {
+        return new Symbol(sym.EXP, new ast.New(ty, elb));
+      }
     :}
 
   | ID.id LPAREN exps_opt.e RPAREN LBRACKET exp.ex RBRACKET

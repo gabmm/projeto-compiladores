@@ -146,14 +146,27 @@ public class InterpretVisitor extends Visitor {
         if (lv instanceof Var){
             Var var = (Var) lv;
             varName = var.getName();
+            addOrUpdateVariable(varName, operands.pop());
         } else if (lv instanceof ArrayAccess) {
             ArrayAccess arrAcc = (ArrayAccess) lv;
-            varName = arrAcc.toString();
+            Var var = (Var) arrAcc.getArray();
+            varName = var.getName();
+
+            Object arr = findVariable(varName);
+            // System.out.println("Classe do object: " + arr.getClass());
+            arrAcc.getIndex().accept(this);
+            int index = (Integer) operands.pop();
+
+            System.out.println("" + ((ArrayList) arr).size());
+            ((ArrayList) arr).add(index, operands.pop());
+
+            updateVariable(varName, arr);
+
         } else if (lv instanceof Dot) {
             Dot dot = (Dot) lv;
             varName = dot.toString();
         }
-        addOrUpdateVariable(varName, operands.pop());
+
     }
     
     @Override
@@ -294,7 +307,13 @@ public class InterpretVisitor extends Visitor {
     @Override
     public void visit(New node) {
         System.out.println("Visitando New...");
-      
+
+        System.out.println(node);
+
+        TTypeArray t = (TTypeArray) node.getType();
+        List<Exp> d = node.getDimensions();
+        TType t2 = t.getBase();
+
             if (node.getType() instanceof TyId) {
             String dataName = ((TyId) node.getType()).getName();
             Data dataDef = dataDefs.get(dataName);
@@ -304,9 +323,11 @@ public class InterpretVisitor extends Visitor {
             }
             operands.push(newInstance);
         } else if (node.getType() instanceof TTypeArray) {
+            System.out.println("É array2");
             node.getDimensions().get(0).accept(this);
             int size = (Integer) operands.pop();
-            operands.push(new Object[size]);
+            System.out.println(size);
+            operands.push(new ArrayList<>(size)); // new ArrayList<base>(dimension)
         }
        
     }
@@ -447,9 +468,9 @@ public class InterpretVisitor extends Visitor {
         node.getExp().accept(this);
         Number exp = (Number) operands.pop();
         if (isInteger(exp)) {
-            operands.push(Integer.valueOf(exp.intValue()));
+            operands.push(-1 * Integer.valueOf(exp.intValue()));
         } else {
-            operands.push(Float.valueOf(exp.floatValue()));
+            operands.push(-1 * Float.valueOf(exp.floatValue()));
         }
     }
 
