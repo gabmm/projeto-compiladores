@@ -88,6 +88,10 @@ test-interp: compile
 run: compile
 	@echo "--- Executando Compilador (Acao: $(ACTION), Arquivo: $(FILE)) ---"
 	@java -cp "$(BIN_DIR)$(CP_SEPARATOR)$(BEAVER_RT)" $(MAIN_CLASS) $(ACTION) $(FILE)
+ifeq ($(ACTION),-dot)
+	@echo "--- Gerando imagem da AST ---"
+	@dot -Tpng ast.dot -o ast.png || echo "Erro ao gerar imagem com dot."
+endif
 
 clean:
 	$(call RM,$(BIN_DIR))
