@@ -141,30 +141,49 @@ public class InterpretVisitor extends Visitor {
     public void visit(Assign node) {
         System.out.println("Visitando Assign...");
         node.getRhs().accept(this);
+        Object value = operands.pop();
+        System.out.println("ValueToAssign: " + value);
         LValue lv = node.getLhs();
+        System.out.println("LValue - no da esquerda: " + lv);
         String varName = "";
-        if (lv instanceof Var){
+        System.out.println("op: " + value);
+        if (lv instanceof Var){ // SE for meuVetor = new Int []...
+            System.out.println("Eh var: " + lv);
             Var var = (Var) lv;
             varName = var.getName();
-            addOrUpdateVariable(varName, operands.pop());
-        } else if (lv instanceof ArrayAccess) {
-            ArrayAccess arrAcc = (ArrayAccess) lv;
-            Var var = (Var) arrAcc.getArray();
-            varName = var.getName();
-
-            Object arr = findVariable(varName);
-            // System.out.println("Classe do object: " + arr.getClass());
-            arrAcc.getIndex().accept(this);
-            int index = (Integer) operands.pop();
-
-            System.out.println("" + ((ArrayList) arr).size());
-            ((ArrayList) arr).add(index, operands.pop());
-
-            updateVariable(varName, arr);
+            addOrUpdateVariable(varName, value); // env - [{meuVetor, estrutura do vetor ( new Int ...)}, {}]
+        } else if (lv instanceof ArrayAccess) { // se for meuVetor[i][j]... = 5;
+            System.out.println("Eh vetor: " + lv);
+            Stack<Integer> index = new Stack<>(); //  facilita para armazenar os indices na ordem inversa: [j,i]
+            LValue lvalueAux = lv;
+            System.out.println("lvalueAux: " + lvalueAux);
+            while(lvalueAux instanceof ArrayAccess){ // percorre todos os []
+                ArrayAccess arrAcc = (ArrayAccess) lvalueAux;
+                arrAcc.getIndex().accept(this); // avalia o indice [j] ( vai da direita para esquerda)
+                index.push((Integer)operands.pop()); // armazena o indice na pilha. Ao final ficaria assim: index = [j, i]
+                lvalueAux = arrAcc.getArray(); // pega para o proximo [i] e itera novamente.
+            }
+            // nessa parte já terá armazenado todos os indices dos vetores e o lvalueAux agora é Var(meuVetor), porque foi andando para esquerda até o lvalue ser Var e sair do Loop.
+            Object vetor = findVariable(((Var) lvalueAux).getName()); // com o Var (meuVetor) dá pra encontrar ele no env.
+            // vetor = {meuVetor, new Int...} -> vetor inteiro
+            // 
+            while (index.size() > 1){ // vai rodar até o penúltimo indice, como só tem 2 indices, vai rodar só uma vez.
+                int currentIndex = index.pop(); // retira o topo da pilha, que nesse caso é o i ( [j,i])
+                if(vetor instanceof List){
+                    vetor = ((List) vetor).get(currentIndex); // aqui o vetor só aponta para o subvetor -> meuVetor[i].
+                } 
+            }
+            // a pilha index agora só tem o [j].
+            int finalIndex = index.pop(); // finalIndex = j;
+            if (vetor instanceof List) { // verifica se o New retornou um List
+                ((List) vetor).set(finalIndex, value); // aqui atribui o valor meuVetor[j]  = valor
+            } 
 
         } else if (lv instanceof Dot) {
             Dot dot = (Dot) lv;
-            varName = dot.toString();
+            dot.getBase().accept(this);
+            HashMap<String, Object> aux = (HashMap<String, Object>) operands.pop();
+            aux.put(dot.getField(),value);
         }
 
     }
@@ -304,17 +323,47 @@ public class InterpretVisitor extends Visitor {
         operands.push(null); 
     }
 
+    private ArrayList<Object> createMultiArray(TType typeNode, List<Exp> dimensions) { // recursivo
+        if (!(typeNode instanceof TTypeArray)) { // caso base
+            return null; 
+        }
+        
+        TTypeArray arrayType = (TTypeArray) typeNode;
+        
+        if (dimensions == null || dimensions.isEmpty()) {
+            return new ArrayList<Object>(); // cria o array vazio se não tiver tamanho especificado.
+        }
+        
+        dimensions.get(0).accept(this);
+        int size = (Integer) operands.pop(); // obtem o tamanho
+        
+        dimensions.remove(0); // reseta o tamanho para proxima recursão
+
+        ArrayList<Object> newArray = new ArrayList<>(); // cria uma lista onde será armazenados os vetores.
+        
+        for (int i = 0; i < size; i++) { 
+           
+            if (arrayType.getBase() instanceof TTypeArray) {  // Se a base for outro array
+                newArray.add(createMultiArray(arrayType.getBase(), dimensions)); // vai adicionar o vetor e chamar o proximo
+            } else {
+                newArray.add(null); // adiciona null para que os espaços não fiquem vazios. [ null, null, null ...]
+            }   // se não adicionar o null, o tamanho do Arraylist continuaria sendo 0.
+        }
+        
+        return newArray;
+    }
+
     @Override
     public void visit(New node) {
         System.out.println("Visitando New...");
 
         System.out.println(node);
 
-        TTypeArray t = (TTypeArray) node.getType();
-        List<Exp> d = node.getDimensions();
-        TType t2 = t.getBase();
+        TType type = node.getType();
+        List<Exp> dimensions = node.getDimensions();
+       // TType t2 = t.getBase();
 
-            if (node.getType() instanceof TyId) {
+        if (type instanceof TyId) {
             String dataName = ((TyId) node.getType()).getName();
             Data dataDef = dataDefs.get(dataName);
             HashMap<String, Object> newInstance = new HashMap<>();
@@ -322,14 +371,16 @@ public class InterpretVisitor extends Visitor {
                 newInstance.put(field.getName(), null);
             }
             operands.push(newInstance);
-        } else if (node.getType() instanceof TTypeArray) {
-            System.out.println("É array2");
-            node.getDimensions().get(0).accept(this);
-            int size = (Integer) operands.pop();
-            System.out.println(size);
-            operands.push(new ArrayList<>(size)); // new ArrayList<base>(dimension)
-        }
-       
+        } else if (type instanceof TTypeArray) 
+            {   
+                System.out.println("Type: " + type.getClass());
+                System.out.println("Criando multiplos array...");
+                ArrayList<Object> newMultiArray = createMultiArray(type, dimensions);
+                System.out.println("Criado com sucesso...");
+                operands.push(newMultiArray);
+                System.out.println("Vetor multiplo: " + newMultiArray);
+                System.out.println("Operands:  " + operands);
+            }
     }
 
     @Override
