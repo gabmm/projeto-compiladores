@@ -509,6 +509,12 @@ exp_list_bracket
     {:
       return new Symbol(sym.EXP_LIST_BRACKET, new java.util.ArrayList<ast.Exp>());
     :}
+  |  exp_list_bracket.list LBRACKET exp.e RBRACKET 
+    {:
+      list.add((ast.Exp) e);
+      return new Symbol(sym.EXP_LIST_BRACKET, list);
+    :}
+
   ;
 
 
