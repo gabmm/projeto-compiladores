@@ -197,6 +197,10 @@ public class DotVisitor extends Visitor {
         nodes.push(nnot);
     }
 
+    public void visit(Read e) {
+
+    }
+
     public void visit(Param e){
         System.out.println("Debugger: PARAM");
         String param = createNode(e.getID());
@@ -216,13 +220,19 @@ public class DotVisitor extends Visitor {
     public void visit(If e){
         System.out.println("Debugger: PRINT");
         String ifstr = createNode("if");
+        String ifcond = createNode("cond");
         e.getCondition().accept(this);
-        createEdge(ifstr, nodes.pop());
+        createEdge(ifcond, nodes.pop());
+        createEdge(ifstr, ifcond);
         e.getThenCmd().accept(this);
-        createEdge(ifstr, nodes.pop());
+        String then = createNode("then");
+        createEdge(then, nodes.pop());
+        createEdge(ifstr, then);
         if (e.getElseCmd() != null){
+            String elseb = createNode("else");
             e.getElseCmd().accept(this);
-            createEdge(ifstr, nodes.pop());
+            createEdge(elseb, nodes.pop());
+            createEdge(ifstr, elseb);
         }
         nodes.push(ifstr);
     }
@@ -369,7 +379,7 @@ public class DotVisitor extends Visitor {
 
     public void visit (Data e){
         System.out.println("Debugger: DATA");
-        String data = e.isAbstract() == true? "Abstract" : "";
+        String data = e.isAbstract() == true ? "Abstract " : "";
         data = createNode(data + "data " + e.getName());
 
         String decls = createNode("decls");

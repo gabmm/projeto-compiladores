@@ -14,6 +14,16 @@
     TIMES, DIV, MOD, LT, GT, AND, NOT, INT, FLOAT, CHAR, ID,
     TYID;
 
+%right NOT;
+%left TIMES, DIV, MOD;
+%left PLUS, MINUS;
+%left LT;
+%left EQ, NEQ;
+%left AND;
+
+
+
+
 %typeof Prog = "Prog";
 %typeof def_list = "java.util.List<ast.Def>";
 %typeof def = "Def";
@@ -45,14 +55,6 @@
 %typeof TYID = "java.lang.String";
 %typeof decl_fun_list = "java.util.List<ast.Def>";
 %typeof decl_or_fun = "Def";
-
-%left AND;
-%left EQ, NEQ;
-%nonassoc LT;
-%left PLUS, MINUS;
-%left TIMES, DIV, MOD;
-%right NOT;
-%left DOT, LBRACKET;
 
 %goal Prog;
 
@@ -401,29 +403,33 @@ itcond
 
 
 exp
-  = exp.e op.opr exp.e2
-    {:
+  = exp.a PLUS exp.b
+    {: return new Symbol(sym.EXP, new ast.Add(a, b)); :}
 
+  | exp.a MINUS exp.b
+    {: return new Symbol(sym.EXP, new ast.Sub(a, b)); :}
 
+  | exp.a TIMES exp.b
+    {: return new Symbol(sym.EXP, new ast.Mul(a, b)); :}
 
+  | exp.a DIV exp.b
+    {: return new Symbol(sym.EXP, new ast.Div(a, b)); :}
 
+  | exp.a MOD exp.b
+    {: return new Symbol(sym.EXP, new ast.Mod(a, b)); :}
 
-      ast.Exp a =  e;
-      String o = opr;
-      ast.Exp b =  e2;
+  | exp.a EQ exp.b
+    {: return new Symbol(sym.EXP, new ast.Eq(a, b)); :}
 
-      switch (o) {
-        case "AND": return new Symbol(sym.EXP, new ast.And(a,b));
-        case "LT": return new Symbol(sym.EXP, new ast.Lt(a,b));
-        case "EQ": return new Symbol(sym.EXP, new ast.Eq(a,b));
-        case "NEQ": return new Symbol(sym.EXP, new ast.Neq(a,b));
-        case "PLUS": return new Symbol(sym.EXP, new ast.Add(a,b));
-        case "MINUS": return new Symbol(sym.EXP, new ast.Sub(a,b));
-        case "TIMES": return new Symbol(sym.EXP, new ast.Mul(a,b));
-        case "DIV": return new Symbol(sym.EXP, new ast.Div(a,b));
-        case "MOD": return new Symbol(sym.EXP, new ast.Mod(a,b));
-        default: throw new RuntimeException("Operador desconhecido: " + o);
-      }
+  | exp.a LT exp.b
+    {: return new Symbol(sym.EXP, new ast.Lt(a, b)); :}
+
+  | exp.a AND exp.b
+    {: return new Symbol(sym.EXP, new ast.And(a, b)); :}
+
+  | exp.a NEQ exp.b
+    {: 
+      return new Symbol(sym.EXP, new ast.Neq(a, b)); 
     :}
 
   | NOT exp.e
