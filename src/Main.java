@@ -3,6 +3,7 @@ import java.io.Reader;
 import parser.Parser;
 import parser.Lexer;
 import ast.Prog;
+import visitors.DotVisitor;
 import visitors.InterpretVisitor;
 
 public class Main {
@@ -33,13 +34,18 @@ public class Main {
                     programNode.accept(interpreter);
                   //  System.out.println("--- Fim da Execucao ---");
                     break;
+                case "-dot":
+                    DotVisitor dot = new DotVisitor();
+                    programNode.accept(dot);
+                    dot.saveToFile("ast.dot");
+                    break;
                 default:
                     System.err.println("Diretiva desconhecida: " + directive);
                     System.exit(1);
             }
         } catch (Exception e) {
             System.out.println("Reject");
-           // e.printStackTrace();
+            e.printStackTrace();
             System.exit(1);
         }
     }
