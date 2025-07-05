@@ -53,5 +53,6 @@ public abstract class Visitor { //deve ter um método abstrato de visit para cad
     public abstract void visit(Lt t);
     public abstract void visit(Mod t);
     public abstract void visit(Dot t);
+    public abstract void visit(Read t);
 
 }
