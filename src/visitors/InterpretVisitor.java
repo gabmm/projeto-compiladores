@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+import java.util.Scanner;
 
 public class InterpretVisitor extends Visitor {
 
@@ -13,6 +14,7 @@ public class InterpretVisitor extends Visitor {
     private final HashMap<String, Data> dataDefs;
     private final Stack<Object> operands;
     private boolean returnMode;
+    private final Scanner inputReader;
 
     public InterpretVisitor() {
         this.env = new Stack<>();
@@ -20,6 +22,7 @@ public class InterpretVisitor extends Visitor {
         this.dataDefs = new HashMap<>();
         this.operands = new Stack<>();
         this.returnMode = false;
+        this.inputReader = new Scanner(System.in);
     }
 
     private Object findVariableAux(String varName){
@@ -34,19 +37,18 @@ public class InterpretVisitor extends Visitor {
     private Object findVariable(String varName) { // encontra valor atual da variável
         Object returnValue = findVariableAux(varName);
 
-        if (returnValue != null){
+        //if (returnValue != null){
             return returnValue;
-        }
+        //}
 
-        throw new RuntimeException("Erro: Variavel '" + varName + "' nao declarada.");
+        //throw new RuntimeException("Erro: Variavel '" + varName + "' nao declarada.");
     }
 
     private void addVariable(String varName, Object value) { // adiciona a variável criada pela primeira vez no escopo
-        for (HashMap<String, Object> scope : env) {
-            if (scope.containsKey(varName)) {
+        
+            if (env.peek().containsKey(varName)) {
                 throw new RuntimeException("Erro Semantico: Redefinicao ilegal da variavel '" + varName + "'.");
             }
-        }
         env.peek().put(varName, value);
     }
     
@@ -57,7 +59,7 @@ public class InterpretVisitor extends Visitor {
                 return;
             }
         }
-        throw new RuntimeException("Erro: Variavel '" + varName + "' nao declarada para atribuicao.");
+        //throw new RuntimeException("Erro: Variavel '" + varName + "' nao declarada para atribuicao.");
     }
 
     private void addOrUpdateVariable(String varName, Object value){
@@ -75,131 +77,121 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(Prog node) {
-        System.out.println("Visitando prog...");
-        // percorre todas as definições:os nomes das funções e tipos de dados.
         for (Def def : node.getDefs()) {
-            if (def instanceof Fun) {
-                Fun fun = (Fun) def;
-                funcs.put(fun.getName(), fun);
-            } else if (def instanceof Data) {
-                Data data = (Data) def;
-                dataDefs.put(data.getName(), data);
-            }
-        }
-        if (!funcs.containsKey("main")) {
-            throw new RuntimeException("Erro de execução: Ponto de entrada 'main' não definido.");
-        }
-        
+            def.accept(this);
+        }  
         Fun mainFunc = funcs.get("main");
-        
-        
-        env.push(new HashMap<>()); // cria o ambiente global a cada execução do programa, onde tudo será armazenado
-        
-        mainFunc.accept(this); // começa a execução principal
-
-        env.pop(); // encerra
+        env.push(new HashMap<>()); 
+        mainFunc.getBody().accept(this);
+        env.pop(); 
     }
     
    @Override
     public void visit(Fun node) {
-        System.out.println("Visitando fun...");
-        HashMap<String, Object> localEnv = new HashMap<>();
-        List<Param> params = node.getParams();
-        for (int i = params.size() - 1; i >= 0; i--) {
-                localEnv.put(params.get(i).getID(), operands.pop());
-            }
-        env.push(localEnv);
-        node.getBody().accept(this);
-        
-        // Se a função terminou sem um return, o seu valor de retorno é (null).
-        if (!returnMode) {
-            operands.push(null);
+        if (!funcs.containsKey(node.getName())) {
+            funcs.put(node.getName(), node);
+            return; 
         }
-        
-        env.pop();
+        node.getBody().accept(this);
+        if (!returnMode) {operands.push(null);}
         returnMode = false;
     }
 
    
     @Override
     public void visit(Block node) {
-        System.out.println("Visitando block...");
+        if (returnMode) return;
+        env.push(new HashMap<>());
         for (Cmd cmd : node.getCmds()) {
             cmd.accept(this);
+            if (returnMode) break;
         }
+        env.pop();
     }
     
     @Override
     public void visit(CmdList node) {
-        System.out.println("Visitando cmdlist...");
         for (Cmd cmd : node.getCommands()) {
+            if(returnMode){return;}
             cmd.accept(this);
         }
     }
-    
+    private Object evaluateLValue(LValue lvalue) {
+       // System.out.println("lvalue: " + lvalue);
+        if (lvalue instanceof Var) {
+          //  System.out.println("lvalue: " + lvalue);
+            return findVariable(((Var) lvalue).getName());
+        }
+        
+        if (lvalue instanceof Dot) {
+            Dot dot = (Dot) lvalue;
+            HashMap<String, Object> aux = (HashMap<String, Object>) evaluateLValue(dot.getBase());
+            return aux.get(dot.getField());
+        }
+        
+        if (lvalue instanceof ArrayAccess) {
+            ArrayAccess accessNode = (ArrayAccess) lvalue;
+            Object collection = evaluateLValue(accessNode.getArray());
+            accessNode.getIndex().accept(this);
+            int index = (Integer) operands.pop();
+            if (collection instanceof List) {
+                return ((List) collection).get(index);
+            }
+        }
+        
+        throw new RuntimeException("Tipo de LValue desconhecido para avaliacao.");
+    }
     @Override
     public void visit(Assign node) {
-        System.out.println("Visitando Assign...");
+        if(returnMode){return;};
         node.getRhs().accept(this);
         Object value = operands.pop();
-        System.out.println("ValueToAssign: " + value);
         LValue lv = node.getLhs();
-        System.out.println("LValue - no da esquerda: " + lv);
         String varName = "";
-        System.out.println("op: " + value);
-        if (lv instanceof Var){ // SE for meuVetor = new Int []...
-            System.out.println("Eh var: " + lv);
+        if (lv instanceof Var){ 
             Var var = (Var) lv;
             varName = var.getName();
-            addOrUpdateVariable(varName, value); // env - [{meuVetor, estrutura do vetor ( new Int ...)}, {}]
-        } else if (lv instanceof ArrayAccess) { // se for meuVetor[i][j]... = 5;
-            System.out.println("Eh vetor: " + lv);
-            Stack<Integer> index = new Stack<>(); //  facilita para armazenar os indices na ordem inversa: [j,i]
-            LValue lvalueAux = lv;
-            System.out.println("lvalueAux: " + lvalueAux);
-            while(lvalueAux instanceof ArrayAccess){ // percorre todos os []
-                ArrayAccess arrAcc = (ArrayAccess) lvalueAux;
-                arrAcc.getIndex().accept(this); // avalia o indice [j] ( vai da direita para esquerda)
-                index.push((Integer)operands.pop()); // armazena o indice na pilha. Ao final ficaria assim: index = [j, i]
-                lvalueAux = arrAcc.getArray(); // pega para o proximo [i] e itera novamente.
-            }
-            // nessa parte já terá armazenado todos os indices dos vetores e o lvalueAux agora é Var(meuVetor), porque foi andando para esquerda até o lvalue ser Var e sair do Loop.
-            Object vetor = findVariable(((Var) lvalueAux).getName()); // com o Var (meuVetor) dá pra encontrar ele no env.
-            // vetor = {meuVetor, new Int...} -> vetor inteiro
-            // 
-            while (index.size() > 1){ // vai rodar até o penúltimo indice, como só tem 2 indices, vai rodar só uma vez.
-                int currentIndex = index.pop(); // retira o topo da pilha, que nesse caso é o i ( [j,i])
-                if(vetor instanceof List){
-                    vetor = ((List) vetor).get(currentIndex); // aqui o vetor só aponta para o subvetor -> meuVetor[i].
-                } 
-            }
-            // a pilha index agora só tem o [j].
-            int finalIndex = index.pop(); // finalIndex = j;
-            if (vetor instanceof List) { // verifica se o New retornou um List
-                ((List) vetor).set(finalIndex, value); // aqui atribui o valor meuVetor[j]  = valor
-            } 
+            
+            addOrUpdateVariable(varName, value);
+        } else if (lv instanceof ArrayAccess) { 
+            ArrayAccess accessNode = (ArrayAccess) lv;
+        
+            Object eLv = evaluateLValue(accessNode.getArray()); // função recursiva para avaliar o LValue: se é Var, array, Dot
+            accessNode.getIndex().accept(this);
+            int finalIndex = (Integer) operands.pop();
 
+            if (eLv instanceof List) {
+                ((List) eLv).set(finalIndex, value);
+            } 
         } else if (lv instanceof Dot) {
             Dot dot = (Dot) lv;
             dot.getBase().accept(this);
-            HashMap<String, Object> aux = (HashMap<String, Object>) operands.pop();
+            HashMap<String, Object> aux = (HashMap<String, Object>) evaluateLValue(dot.getBase());
             aux.put(dot.getField(),value);
         }
-
     }
     
     @Override
     public void visit(Return node) {
-        System.out.println("Visitando Return...");
-        for (Exp ret : node.getExps()) {
-            ret.accept(this);
+        if (returnMode) return;
+        if (node.getExps() == null || node.getExps().isEmpty()) {
+            operands.push(null); 
+        } else if (node.getExps().size() == 1) { // só um retorno
+            node.getExps().get(0).accept(this); 
+        } else { // vários retornos         
+            ArrayList<Object> returnValues = new ArrayList<>();
+            for (Exp exp : node.getExps()) {
+                exp.accept(this);
+                returnValues.add(0, operands.pop()); 
+            }
+            operands.push(returnValues);
         }
         returnMode = true;
     }
 
     @Override
     public void visit(If node) {
-        System.out.println("Visitando If...");
+        if (returnMode) return;
         node.getCondition().accept(this);
         if ((Boolean) operands.pop()) {
             node.getThenCmd().accept(this);
@@ -210,29 +202,54 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(CallStmt node) {
-        System.out.println("Visitando CallStmt...");
-        Fun fun = funcs.get(node.getID()); // acho a funcao
+       // System.out.println("INICIANDO CALLSTMT");
+        try {
+            Fun fun = funcs.get(node.getID()); // acho a funcao
+        if (fun == null) throw new RuntimeException("Função não encontrada: " + node.getID());
+        List<Param> funcParams = fun.getParams();
         if (fun != null) {
             for (Exp arg : node.getArgs()) {
                 arg.accept(this); // empilho os argumentos
             }
-            fun.accept(this); // rodo a funcao, que empilha os retornos
+            
+            env.push(new HashMap<String, Object>());
 
-            /*
-             * tenho os retornos no topo da pilha, preciso agora dar pop() na pilha e mapear
-             * o retorno as variaveis
-             */
-            for (LValue ret : node.getReturns()) {
-                ret.accept(this); // esse é o nome das variaveis
-                addVariable((String) operands.pop(), operands.pop());
-                // env.peek().put((String)operands.pop(), operands.pop());
+            for (int i = funcParams.size() - 1; i >= 0; i--) {
+                env.peek().put(funcParams.get(i).getID(), operands.pop());
+            }
+            if (fun.getBody() == null) {
+                    throw new RuntimeException("Erro: A funcao '" + fun.getName() + "' nao tem um corpo para ser executado.");
+                }
+            fun.getBody().accept(this);
+
+            Object returnValue = operands.pop();
+
+            env.pop();
+            returnMode = false;
+            List<LValue> returnLValues = node.getReturns();
+            if (returnLValues != null && !returnLValues.isEmpty()) {
+                // Se a função retornou múltiplos valores (uma Lista)
+                if (returnValue instanceof List) {
+                    List<Object> returns = (List<Object>) returnValue;
+                    for (int i = 0; i < returnLValues.size(); i++) {
+                        String varName = ((Var) returnLValues.get(i)).getName();
+                        updateVariable(varName, returns.get(i));
+                    }
+                } else { // Se a função retornou um único valor
+                    String varName = ((Var) returnLValues.get(0)).getName();
+                    updateVariable(varName, returnValue);
+                }
             }
         }
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new RuntimeException("Erro durante a execução da função '" + node.getID() + "'.", e);
+        }
+        
     }
     
     @Override
     public void visit(Add node) {
-        System.out.println("Visitando Add...");
         node.getLeft().accept(this);
         node.getRight().accept(this);
         Number left, right;
@@ -247,7 +264,6 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(And node) {
-        System.out.println("Visitando And...");
         node.getLeft().accept(this);
         node.getRight().accept(this);
         Boolean left, right;
@@ -258,7 +274,6 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(Or node) {
-        System.out.println("Visitando Or... (nem existe...)");
         node.getLeft().accept(this);
         boolean left = (Boolean) operands.pop();
         if (left) { 
@@ -271,7 +286,6 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(Eq node) {
-        System.out.println("Visitando EQ...");
         node.getLeft().accept(this);
         node.getRight().accept(this);
         operands.push(Boolean.valueOf(operands.pop().equals(operands.pop())));
@@ -279,7 +293,6 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(Neq node) {
-        System.out.println("Visitando NEQ...");
         node.getRight().accept(this);
         node.getLeft().accept(this);
         operands.push(!Boolean.valueOf(operands.pop().equals(operands.pop())));
@@ -287,7 +300,6 @@ public class InterpretVisitor extends Visitor {
     
     @Override
     public void visit(Var node) {
-        System.out.println("Visitando VAR...");
         // Object value = env.peek().get(node.getName());
         Object value = findVariable(node.getName());
         operands.push(value);
@@ -295,97 +307,88 @@ public class InterpretVisitor extends Visitor {
     
     @Override
     public void visit(NInt node) {
-        System.out.println("Visitando NINT...");
         operands.push(Integer.valueOf(node.getValue()));
     }
 
     @Override
     public void visit(NFloat node) {
-        System.out.println("Visitando NFLOAT...");
         operands.push(Float.valueOf(node.getValue()));
     }
 
     @Override
     public void visit(NBool node) {
-        System.out.println("Visitando NBOOL...");
         operands.push(Boolean.valueOf(node.getValue()));
     }
 
     @Override
     public void visit(NChar node) {
-        System.out.println("Visitando NCHAR...");
         operands.push(Character.valueOf(node.getValue()));
     }
 
     @Override
     public void visit(Null node) {
-        System.out.println("Visitando Null...");
         operands.push(null); 
     }
 
     private ArrayList<Object> createMultiArray(TType typeNode, List<Exp> dimensions) { // recursivo
-        if (!(typeNode instanceof TTypeArray)) { // caso base
+        if (!(typeNode instanceof TTypeArray)) { 
             return null; 
         }
         
         TTypeArray arrayType = (TTypeArray) typeNode;
         
         if (dimensions == null || dimensions.isEmpty()) {
-            return new ArrayList<Object>(); // cria o array vazio se não tiver tamanho especificado.
+            return null; 
         }
         
         dimensions.get(0).accept(this);
-        int size = (Integer) operands.pop(); // obtem o tamanho
+        int size = (Integer) operands.pop(); 
         
-        dimensions.remove(0); // reseta o tamanho para proxima recursão
-
-        ArrayList<Object> newArray = new ArrayList<>(); // cria uma lista onde será armazenados os vetores.
+        List<Exp> dimensionAux = dimensions.subList(1, dimensions.size());
+        ArrayList<Object> newArray = new ArrayList<>(); 
         
         for (int i = 0; i < size; i++) { 
-           
-            if (arrayType.getBase() instanceof TTypeArray) {  // Se a base for outro array
-                newArray.add(createMultiArray(arrayType.getBase(), dimensions)); // vai adicionar o vetor e chamar o proximo
-            } else {
-                newArray.add(null); // adiciona null para que os espaços não fiquem vazios. [ null, null, null ...]
-            }   // se não adicionar o null, o tamanho do Arraylist continuaria sendo 0.
+           Object subVet = createMultiArray(arrayType.getBase(), dimensionAux);
+            newArray.add(subVet); 
         }
-        
         return newArray;
     }
 
     @Override
     public void visit(New node) {
-        System.out.println("Visitando New...");
 
-        System.out.println(node);
-
+        //System.out.println("Type: " + node.getType());
         TType type = node.getType();
         List<Exp> dimensions = node.getDimensions();
        // TType t2 = t.getBase();
 
-        if (type instanceof TyId) {
-            String dataName = ((TyId) node.getType()).getName();
-            Data dataDef = dataDefs.get(dataName);
-            HashMap<String, Object> newInstance = new HashMap<>();
-            for (Decl field : dataDef.getDecls()) {
-                newInstance.put(field.getName(), null);
-            }
-            operands.push(newInstance);
-        } else if (type instanceof TTypeArray) 
-            {   
-                System.out.println("Type: " + type.getClass());
-                System.out.println("Criando multiplos array...");
-                ArrayList<Object> newMultiArray = createMultiArray(type, dimensions);
-                System.out.println("Criado com sucesso...");
-                operands.push(newMultiArray);
-                System.out.println("Vetor multiplo: " + newMultiArray);
-                System.out.println("Operands:  " + operands);
-            }
+       if (dimensions.isEmpty()){
+            if (type instanceof TyId) {
+               // System.out.println("eh TyId: " + node.getType());
+                String dataName = ((TyId) node.getType()).getName();
+                Data dataDef = dataDefs.get(dataName);
+                HashMap<String, Object> newInstance = new HashMap<>();
+                for (Decl field : dataDef.getDecls()) {
+                    newInstance.put(field.getName(), null);
+                }
+                operands.push(newInstance);
+            } 
+       }
+       else{
+           // System.out.println("Eh array: " + type);
+            TType typeAux = type;
+            for(int i = 0; i < dimensions.size(); i++){ 
+                typeAux = new TTypeArray(typeAux);
+            }    
+            ArrayList<Object> newArray = createMultiArray(typeAux, dimensions);
+           // System.out.println("novo array: " + newArray);
+            operands.push(newArray);        
+       }
+        
     }
 
     @Override
     public void visit(ArrayAccess node) {
-        System.out.println("Visitando ArrayAccess...");
         node.getArray().accept(this);
         node.getIndex().accept(this);
         int index = (Integer) operands.pop();
@@ -394,12 +397,11 @@ public class InterpretVisitor extends Visitor {
             operands.push(((List) array).get(index));
         } else if (array.getClass().isArray()) {
             operands.push(java.lang.reflect.Array.get(array, index)); // reflect.array retorna um Objeto genérico
-        }                                                             // pois não há como saber se o vetor é de inteios, booleanos...
+        }                                                         
     }
 
     @Override
     public void visit(Dot node) {
-        System.out.println("Visitando Dot...");
         node.getBase().accept(this);
         HashMap<String, Object> object = (HashMap<String, Object>) operands.pop();
         operands.push(object.get(node.getField()));
@@ -441,7 +443,6 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(Sub node) {
-        System.out.println("Visitando Sub...");
         node.getLeft().accept(this);
         node.getRight().accept(this);
         Number left, right;
@@ -456,7 +457,6 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(Mul node) {
-        System.out.println("Visitando Mul...");
         node.getLeft().accept(this);
         node.getRight().accept(this);
         Number left, right;
@@ -471,7 +471,6 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(Div node) {
-        System.out.println("Visitando Div...");
         node.getLeft().accept(this);
         node.getRight().accept(this);
         Number left, right;
@@ -486,7 +485,6 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(Mod node) {
-        System.out.println("Visitando Add...");
         node.getLeft().accept(this);
         node.getRight().accept(this);
         int left, right;
@@ -504,6 +502,7 @@ public class InterpretVisitor extends Visitor {
             Number left = (Number) operands.pop();
             operands.push(left.floatValue() < right.floatValue());
         } catch (Exception e) {
+             e.printStackTrace();
             throw new RuntimeException( " (" + node.getLine() + ", " + node.getCol() + ") " + e.getMessage() );
         }
     }
@@ -533,79 +532,140 @@ public class InterpretVisitor extends Visitor {
 
     @Override
     public void visit(Print node) {
-        System.out.println("Visitando print...");
+        if (returnMode) return;
         node.getExpr().accept(this);
-        System.out.println(operands.pop().toString());
+        //System.out.println(operands.pop());
     }
 
     @Override
-    public void visit(Iterate node) {
-        ItCond cond = node.getCondition(); 
-        if (cond instanceof ItCondExp) { // se o loop for quantidade
-            ItCondExp itExp = (ItCondExp) cond;
-            itExp.getCond().accept(this); 
-            int times = (Integer) operands.pop(); // Pega qtd de vezes
-            for (int i = 0; i < times; i++) { // executa a qtd de vezes necessária
-                node.getBody().accept(this); 
-            }
-        } else if (cond instanceof ItCondId) { // se for item: vetor 
-            ItCondId itId = (ItCondId) cond;
-            itId.getCond().accept(this);
-            Object collection = operands.pop();
-            String name = itId.getID(); 
+public void visit(Iterate node) {
+    if (returnMode) return;
 
-            if (collection instanceof List) { // função com multiplos valores // iterate (item : divmod(10, 3)) {
-                                                                              //      print item;
-                                                                              //  }
-                env.push(new HashMap<>()); 
-                addVariable(name, null); 
-                for (Object item : (List) collection) {
-                    updateVariable(name, item);
-                    node.getBody().accept(this);
-                }
-                env.pop();
-            } else if (collection != null && collection.getClass().isArray()) { // quando array é criado pelo new
-                    env.push(new HashMap<>());                                  // vet = new Int[3];
-                    addVariable(name, null);                               // iterate (n : vet) {
-                    int length = java.lang.reflect.Array.getLength(collection);  //     print n;
-                    for (int i = 0; i < length; i++) {                           // }                                 
-                    Object item = java.lang.reflect.Array.get(collection, i);
-                    updateVariable(name, item); 
-                    node.getBody().accept(this);
-                }
-                env.pop();
+    ItCond cond = node.getCondition();
+    if (cond instanceof ItCondExp) {
+        ItCondExp itExp = (ItCondExp) cond;
+        itExp.getCond().accept(this);
+        Object result = operands.pop();
+        if (!(result instanceof Integer)) {
+            throw new RuntimeException("Erro: iterate(N) espera uma expressão inteira, mas recebeu " + result.getClass().getName());
+        }
+
+        int times = (Integer) result;
+        for (int i = 0; i < times; i++) {
+            node.getBody().accept(this);
+            if (returnMode) {
+                break;
             }
         }
     }
+    else if (cond instanceof ItCondId) {
+        ItCondId itId = (ItCondId) cond;
+        String varName = itId.getID(); 
+
+        itId.getCond().accept(this);
+        Object collectionOrNumber = operands.pop();
+        if (collectionOrNumber instanceof List) {
+            List<?> collection = (List<?>) collectionOrNumber;
+            env.push(new HashMap<>());
+            addVariable(varName, null);
+
+            for (Object item : collection) {
+                updateVariable(varName, item); 
+                node.getBody().accept(this);   
+                if (returnMode) break;
+            }
+
+            env.pop(); 
+        }
+        else if (collectionOrNumber instanceof Integer) {
+            int limit = (Integer) collectionOrNumber;
+
+            env.push(new HashMap<>());
+            addVariable(varName, null);
+
+            for (int i = 0; i < limit; i++) {
+                updateVariable(varName, i); 
+                node.getBody().accept(this);
+                if (returnMode) break;
+            }
+
+            env.pop();
+        }
+        else {
+            String typeName = (collectionOrNumber != null) ? collectionOrNumber.getClass().getName() : "null";
+            throw new RuntimeException("Erro: A expressão em iterate(id: expr) deve ser um array ou um inteiro, mas foi " + typeName);
+        }
+    }
+}
 
     
     @Override
     public void visit(Call node) {   
+        //System.out.println("INICIANDO CALL");
         try {
+            
             Fun fun = funcs.get(node.getFuncName());
+            if (fun == null) throw new RuntimeException("Função não encontrada: " + node.getFuncName());
             for (Exp exp: node.getArgs()) {
                 exp.accept(this);
+               // System.out.println("getArgs: " + exp);
             }
-            
-            fun.accept(this);
+            env.push(new HashMap<>());
+            //HashMap<String, Object> aux = new HashMap<>();
+            for (int i = fun.getParams().size() - 1; i >= 0; i--) {
+                env.peek().put(fun.getParams().get(i).getID(), operands.pop());
+            }
+           
+            if (fun.getBody() == null) {
+                throw new RuntimeException("Erro: A função '" + fun.getName() + "' não tem um corpo para ser executado.");
+            }
+           // System.out.println("Body: " + fun.getBody());
+            fun.getBody().accept(this);
+          //   System.out.println("aaqui");
             Object returnValue = operands.pop(); // pode ser um único objeto ou uma lista
+            env.pop();
+            returnMode = false;
+            
             node.getIndex().accept(this);
             int index = (Integer) operands.pop();
-
-            if(returnValue instanceof List){ // se for multiplus retornos
+           // System.out.println("index: " + index);
+            List<TType> returnTypes = fun.getType();
+           // System.out.println("returnTypes: " + returnTypes);
+            if (returnTypes != null && returnTypes.size() > 1) {
+                if (!(returnValue instanceof List)) {
+                    throw new RuntimeException("Erro: Função com multiplos retornos não retornou uma lista.");
+                }
                 operands.push(((List) returnValue).get(index));
-            }
-            else if (index == 0){ // se for um único returno
-                operands.push(returnValue);
-            } else {
-                throw new RuntimeException("indice de retorno fora dos limites para função com retorno único.");
-            }
-                
+                } else {
+
+                    if (index != 0) {
+                        throw new RuntimeException("Erro");
+                    }
+                  //  System.out.println("returnValue: " + returnValue);
+                    operands.push(returnValue);
+                  //  System.out.println("returnValue: " + returnValue);
+                }       
         } catch (Exception e) {
+            e.printStackTrace();
             throw new RuntimeException( " (" + node.getLine() + ", " + node.getCol() + ") " + e.getMessage() );
         }
     }
+    @Override
+        public void visit(Read node) {
+            if (returnMode) return;
+            
+    
+            int value = inputReader.nextInt();
 
+          
+            LValue lvalue = node.getLValue();
+            if (lvalue instanceof Var) {
+                String varName = ((Var) lvalue).getName();
+                addOrUpdateVariable(varName, Integer.valueOf(value));
+            } else {
+                throw new RuntimeException("Erro: 'read' só pode ser usado com variaveis simples.");
+            }
+        }
     
     @Override public void visit(TyInt node) {}
     @Override public void visit(TyChar node) {}
