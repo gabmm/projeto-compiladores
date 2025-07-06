@@ -182,7 +182,8 @@ public class InterpretVisitor extends Visitor {
             ArrayList<Object> returnValues = new ArrayList<>();
             for (Exp exp : node.getExps()) {
                 exp.accept(this);
-                returnValues.add(0, operands.pop()); 
+                // returnValues.add(0, operands.pop());
+                returnValues.add(operands.pop());
             }
             operands.push(returnValues);
         }
@@ -534,7 +535,7 @@ public class InterpretVisitor extends Visitor {
     public void visit(Print node) {
         if (returnMode) return;
         node.getExpr().accept(this);
-        //System.out.println(operands.pop());
+        System.out.println(operands.pop());
     }
 
     @Override

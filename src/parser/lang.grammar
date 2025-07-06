@@ -2,6 +2,7 @@
 %import "ast.*";
 %import "java.util.List";
 %import "java.util.ArrayList";
+%import "java.io.IOException";
 
 %class "Parser";
 
@@ -22,7 +23,20 @@
 %left AND;
 
 
+%embed {:
+private boolean parsed;
 
+public boolean wasParsed(){
+  return parsed;
+}
+
+protected void recoverFromError(Symbol token, TokenStream in) throws IOException, Parser.Exception{
+  super.recoverFromError(token, in);
+  parsed = false;
+}
+:};
+
+%init {: parsed = true; :};
 
 %typeof Prog = "Prog";
 %typeof def_list = "java.util.List<ast.Def>";

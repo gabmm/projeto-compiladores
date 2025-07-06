@@ -1,5 +1,6 @@
 import java.io.FileReader;
 import java.io.Reader;
+import java.io.IOException;;
 import parser.Parser;
 import parser.Lexer;
 import ast.Prog;
@@ -22,8 +23,12 @@ public class Main {
             Parser parser = new Parser();
             //System.out.println("Executando analise sintatica em: " + filePath);
             Prog programNode = (Prog) parser.parse(lexer); 
-           // System.out.println("Analise sintatica concluida com sucesso.");
-            System.out.println(("Accept"));
+            // System.out.println("Analise sintatica concluida com sucesso.");
+            if (!parser.wasParsed()) {
+                System.err.println("Rejected!");
+                return;
+            }
+            System.out.println(("Accepted!"));
             switch (directive) {
                 case "-syn":
                     // nao faz mais nada, a analise ja foi feita.
@@ -43,8 +48,12 @@ public class Main {
                     System.err.println("Diretiva desconhecida: " + directive);
                     System.exit(1);
             }
+        } catch (IOException e) {
+            System.err.println("Exceção de IO: " + e.getMessage());
+        } catch (beaver.Parser.Exception e) {
+            System.err.println("Exceção do parser: " + e.getMessage());
         } catch (Exception e) {
-            System.out.println("Reject");
+            System.err.println("Exceção do visitor: " + e.getMessage());
             e.printStackTrace();
             System.exit(1);
         }

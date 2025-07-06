@@ -152,7 +152,7 @@ public class DotVisitor extends Visitor {
     public void visit(Fun e){
         System.out.println("Debugger: FUN");
         String fun = createNode("fun " + e.getName());
-        String types = createNode("types");
+        String types = createNode("retTypes");
         String params = createNode("params");
         for (TType t : e.getType()){
             t.accept(this);
@@ -431,7 +431,7 @@ public class DotVisitor extends Visitor {
 
     public void visit(TyId e){
         System.out.println("Debugger: TYID");
-        nodes.push(createNode("tyid " + e.getName()));
+        nodes.push(createNode(e.getName()));
     }
 
     public void visit(TTypeArray e){
