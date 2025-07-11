@@ -48,15 +48,15 @@ make run ACTION=-i FILE=caminho/para/arquivo
   Executa **apenas o analisador sintático**, verificando se o código fonte está sintaticamente correto.
 
 - `FILE=...`  
-  Caminho para o **arquivo de entrada** `.lan` a ser analisado ou interpretado.
+  Caminho para o **arquivo de entrada** a ser analisado ou interpretado.
 
 ---
 
 ### 📌 Exemplos de uso:
 
 ```bash
-make run ACTION=-syn FILE=tests/certo/exemplo.lan
-make run ACTION=-dot FILE=tests/interpretador/fibonacci.lan
+make run ACTION=-syn FILE=tests/certo/exemplo
+make run ACTION=-dot FILE=tests/interpretador/fibonacci
 make run ACTION=-i FILE=input.txt
 ```
 
