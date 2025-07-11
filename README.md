@@ -1,69 +1,89 @@
-# Projeto Compiladores
+# Trabalho de Compiladores — Linguagem Lang
 
-## Estrutura do Projeto
+**UFJF - Universidade Federal de Juiz de Fora**  
+**Departamento de Ciência da Computação**  
+**Disciplina: Compiladores**
 
-- `src/`: arquivos fonte
-  - `lexer.flex`: especificação léxica
-  - `lang.grammar`: especificação da gramática
-- `lib/`: bibliotecas utilizadas (JFlex e Beaver)
-- `bin/`: arquivos compilados
+**Desenvolvido por:**  
+- Gabriel Martins da Costa Medeiros — 201935032  
+- Matheus Peron Resende Corrêa — 201965089C  
 
 ---
 
-## Como Executar
+## ✅ Pré-requisitos
 
-Siga os passos abaixo para configurar e executar o projeto:
+Para compilar e executar este projeto, é necessário:
 
-### 1. Baixar o JFlex e o Beaver
-
-- Faça o download do JFlex compilado `jflex-full-1.8.2.jar`.
-- Faça o download do runtime e do arquivo compilado do Beaver: `beaver-rt-0.9.11.jar` e `beaver-cc-0.9.11.jar`.
-- Todos estão no *Classroom* da disciplina.
-- Mova os arquivos para as pastas `/lib/jflex` e `/lib/beaver`.
-
-### 2. Gerar o analisador léxico
-
-- Execute o comando abaixo para gerar o `Lexer.java`:
-
-  ```bash
-  java -jar /lib/jflex/jflex-full-1.8.2.jar /src/parser/lexer.flex
-  ```
-
-> Isso criará o arquivo `Lexer.java` automaticamente na pasta `src/`.
-
-Não é mais necessário as classes auxiliares. Isso é construído pelo Beaver;
-
-### 2. Gerar o analisador sintático
-
-- Execute o comando abaixo para gerar o `Parser.java` e o `Terminals.java`:
-
-  ```bash
-  java -jar /lib/beaver/beaver-cc-0.9.11.jar -d /src/parser /src/parser/lang.grammar
-  ```
-
-### 3. Compilar o projeto
-
-Compile todos os arquivos Java, incluindo o `Lexer.java` recém-gerado:
+- Ter o **Java SDK** instalado (recomenda-se Java 17 ou superior).
+- Ter o utilitário `dot` instalado (para gerar imagens da AST).  
+  Para instalar no Ubuntu/Debian, execute:
 
 ```bash
-javac -cp ".;lib/beaver/beaver-rt-0.9.11.jar" -d bin /src/parser/Terminals.java /src/parser/Parser.java /src/parser/Lexer.java /src/Main.java
-```
-
-> Os arquivos `.class` serão gerados na pasta `bin/`.
-
-### 4. Executar o programa
-
-Rode o programa com o comando:
-
-```bash
-java -cp bin Main <input>
+sudo apt install graphviz
 ```
 
 ---
 
-## Observações
+## ⚙️ Compilação e Execução
 
-- As pastas auxiliares (`.vscode`, `bin`, `lib`, `tools`) também são ignoradas no Git.
-- Certifique-se de ter o Java instalado e configurado corretamente no seu sistema (`java` e `javac` no PATH).
+O projeto utiliza um `Makefile` para automatizar a compilação e execução do compilador.
+
+### Para compilar e rodar o interpretador com um arquivo
+
+```bash
+make run ACTION=-i FILE=caminho/para/arquivo
+```
+
+### ℹ️ Parâmetros disponíveis:
+
+- `ACTION=-i`  
+  Executa o **interpretador** da linguagem Lang, interpretando o código fonte.
+
+- `ACTION=-dot`  
+  Executa o parser e o **DotVisitor**, gerando o arquivo `ast.dot`.  
+  Em seguida, o comando `dot` converte para a imagem `ast.png`.  
+  > **Importante:** Requer o `graphviz` instalado (com o comando `dot` acessível no terminal).
+
+- `ACTION=-syn`  
+  Executa **apenas o analisador sintático**, verificando se o código fonte está sintaticamente correto.
+
+- `FILE=...`  
+  Caminho para o **arquivo de entrada** `.lan` a ser analisado ou interpretado.
+
+---
+
+### 📌 Exemplos de uso:
+
+```bash
+make run ACTION=-syn FILE=tests/certo/exemplo.lan
+make run ACTION=-dot FILE=tests/interpretador/fibonacci.lan
+make run ACTION=-i FILE=input.txt
+```
+
+---
+
+## 🧹 Limpeza
+
+Para remover todos os arquivos gerados durante a compilação:
+
+```bash
+make clean
+```
+
+---
+
+## 🔎 Verificações rápidas
+
+- Verificar se o Java está corretamente instalado:
+
+```bash
+java -version
+```
+
+- Verificar se o `dot` está disponível (necessário para o modo `-dot`):
+
+```bash
+dot -V
+```
 
 ---

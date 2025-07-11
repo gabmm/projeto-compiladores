@@ -1,11 +1,10 @@
-%package "parser";
+%package "parser" /* DESENVOLVIDO POR GABRIEL 201935032 E MATHEUS 201965089C */;
 %import "ast.*";
 %import "java.util.List";
 %import "java.util.ArrayList";
 %import "java.io.IOException";
 
 %class "Parser";
-
 
 %terminals 
     DATA, ABSTRACT, IF, ELSE, ITERATE, READ, PRINT, RETURN,
