@@ -12,4 +12,8 @@ public class STyFloat extends SType {
     public boolean match(SType t){
         return t instanceof STyFloat;
     }
+
+    public String toString() {
+        return "FLOAT";
+    }
 }

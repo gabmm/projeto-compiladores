@@ -16,5 +16,8 @@ public class STyData extends SType{
         return (t instanceof STyData) && this.id.equals(((STyData)t).getID());
     }
 
+    public String toString() {
+        return this.id.toUpperCase();
+    }
 
 }

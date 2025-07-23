@@ -12,4 +12,8 @@ public class STyChar extends SType{
     public boolean match(SType t){
         return t instanceof STyChar;
     }
+
+    public String toString() {
+        return "CHAR";
+    }
 }

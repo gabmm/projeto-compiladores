@@ -10,6 +10,8 @@
 package visitors;
 
 import ast.*;
+import langUtil.*;
+
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.List;
@@ -20,11 +22,31 @@ public class TypeCheckerVisitor extends Visitor {
 
 
     //inicializar variáveis de SType **singleton pattern**
-    //criar pilha de operands do tipo SType
-    //
+    // serve para otimizar desempenho
 
+    private STyInt tyInt = STyInt.initSTyInt();
+    private STyFloat tyFloat = STyFloat.initSTyFloat();
+    private STyChar tyChar = STyChar.initSTyChar();
+    private STyBool tyBool = STyBool.initSTyBool();
+
+    private ArrayList<String> log;
+
+    // mapeamento de nome de funcao -> ambiente;
+    // essa classe nada mais que manipula um TreeMap
+    private TyEnv<LocalEnv<SType>> envs;
+
+    // ambiente que estou agora:
+    // ex.: estou em uma atribuicao qualquer, onde vou salvar?
+    // r. no map da funcao que estou, a current
+    private LocalEnv<SType> current;
+
+    private Stack<SType> operands;
+    private boolean hasReturn;
 
     public TypeCheckerVisitor() {
+        operands = new Stack<SType>();
+        envs = new TyEnv<LocalEnv<SType>>();
+        log = new ArrayList<String>();
     }
 
     // private Object findVariableAux(String varName){
@@ -77,15 +99,12 @@ public class TypeCheckerVisitor extends Visitor {
         return number instanceof Integer;
     }
 
-    /*
-      * cria vetor de tipos do tamanho do array
-      * preenche vetor com os tipos parametros da funcao
-      * completa o vetor com os retornos da funcao
-      * cria tipo funcao com o vetor
-      * coloca no map (ou classe propria) o id da funcao e o tipo funcao (que contem o array)
-      */
     @Override
     public void visit(Prog node) {
+        for (Def def : node.getDefs()) {
+            def.accept(this);
+        }
+
         // for (Def def : node.getDefs()) {
         //     def.accept(this);
         // }  
@@ -94,13 +113,28 @@ public class TypeCheckerVisitor extends Visitor {
         // mainFunc.getBody().accept(this);
         // env.pop(); 
     }
-    
+
    @Override
     public void visit(Fun node) {
-        // if (!funcs.containsKey(node.getName())) {
-        //     funcs.put(node.getName(), node);
-        //     return; 
-        // }
+        if (!envs.hasKey(node.getName())) {
+            STyFun funType;
+
+            SType[] fparams = new SType[node.getParams().size()];
+            for (int i = 0; i < node.getParams().size(); i++) {
+                node.getParams().get(i).getType().accept(this);
+                fparams[i] = operands.pop();
+            }
+
+            SType[] frets = new SType[node.getType().size()];
+            for (int i = 0; i < node.getType().size(); i++) {
+                node.getType().get(i).accept(this);
+                frets[i] = operands.pop();
+            }
+
+            funType = new STyFun(fparams, frets);
+            envs.put(node.getName(), new LocalEnv<SType>(node.getName(), funType));
+            return;
+        }
         // node.getBody().accept(this);
         // if (!returnMode) {operands.push(null);}
         // returnMode = false;
@@ -677,15 +711,44 @@ public void visit(Iterate node) {
             // }
         }
     
-    @Override public void visit(TyInt node) {}
-    @Override public void visit(TyChar node) {}
-    @Override public void visit(TyBool node) {}
-    @Override public void visit(TyFloat node) {}
-    @Override public void visit(TyId node) {}
-    @Override public void visit(TTypeArray node) {}
+        @Override
+        public void visit(TyInt node) {
+            operands.push(tyInt);
+        }
+
+        @Override
+        public void visit(TyChar node) {
+            operands.push(tyChar);
+        }
+
+        @Override
+        public void visit(TyBool node) {
+            operands.push(tyBool);
+        }
+
+        @Override
+        public void visit(TyFloat node) {
+            operands.push(tyFloat);
+        }
+
+        @Override
+        public void visit(TyId node) {
+            operands.push(new STyData(node.getName()));
+        }
+
+        @Override
+        public void visit(TTypeArray node) {
+            // consigo um TType... mas de que tipo?
+            node.getBase().accept(this);
+            operands.push(new STyArr(operands.pop()));
+        }
     @Override public void visit(ExpList node) {}
     @Override public void visit(Cmd node) { }
     @Override public void visit(ItCond node) {}
-    @Override public void visit(Param node) {}
+
+    @Override
+    public void visit(Param node) {
+
+    }
     
 }

@@ -15,5 +15,9 @@ public class STyArr extends SType {
     public boolean match(SType t){
         return (t instanceof STyArr) &&  this.type.match(((STyArr)t).getType());
     }
+
+    public String toString() {
+        return this.type.toString() + "[]";
+    }
 }
 

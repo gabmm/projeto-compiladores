@@ -14,4 +14,8 @@ public class STyInt extends SType {
         return t instanceof STyInt;
     }
 
+    public String toString() {
+        return "INT";
+    }
+
 }

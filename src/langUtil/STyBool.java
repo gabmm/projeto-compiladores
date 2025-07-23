@@ -12,4 +12,8 @@ public class STyBool extends SType {
     public boolean match(SType t){
         return t instanceof STyBool;
     }
+
+    public String toString() {
+        return "BOOL";
+    }
 }
