@@ -35,11 +35,14 @@ public class TyEnv<A> {
         String map = "";
         for (Map.Entry<String, A> entry : this.typeEnv.entrySet()){
             map += "[ ID: " + entry.getKey() + " TYPE: " + entry.getValue().toString() + "]\n";
+            // map += entry.getValue().toString() + "\n";
+
         }
         return map;
     }
 
     public void printMap(){
+
         System.out.println(this.toString());
     }
 

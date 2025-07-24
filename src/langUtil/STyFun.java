@@ -43,19 +43,27 @@ public class STyFun extends SType{
     }
 
     public String toString(){
-        String fString = "PARAMS: ";
+        String fString = "(";
         
         for (int i = 0; i < this.paramTypes.length; i++){
-            fString += this.paramTypes.toString() + " ";
+            if (i < this.paramTypes.length - 1) {
+                fString += this.paramTypes[i].toString() + ", ";
+            } else {
+                fString += this.paramTypes[i].toString();
+            }
         }
 
-        fString += "RETURNS: ";
+        fString += ") : ";
 
         if (this.retTypes.length == 0){
             fString += "VOID";
         }
         for (int i = 0; i < this.retTypes.length; i++){
-            fString += this.paramTypes.toString() + " ";
+            if (i < this.retTypes.length - 1) {
+                fString += this.retTypes[i].toString() + ", ";
+            } else {
+                fString += this.retTypes[i].toString();
+            }
         }
 
         return fString;

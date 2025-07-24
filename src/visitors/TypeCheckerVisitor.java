@@ -43,6 +43,10 @@ public class TypeCheckerVisitor extends Visitor {
     private Stack<SType> operands;
     private boolean hasReturn;
 
+    public void printEnvs() {
+        envs.printMap();
+    }
+
     public TypeCheckerVisitor() {
         operands = new Stack<SType>();
         envs = new TyEnv<LocalEnv<SType>>();
@@ -105,6 +109,12 @@ public class TypeCheckerVisitor extends Visitor {
             def.accept(this);
         }
 
+        for (Def def : node.getDefs()) {
+            if (def instanceof Fun) {
+                def.accept(this);
+            }
+        }
+
         // for (Def def : node.getDefs()) {
         //     def.accept(this);
         // }  
@@ -135,7 +145,14 @@ public class TypeCheckerVisitor extends Visitor {
             envs.put(node.getName(), new LocalEnv<SType>(node.getName(), funType));
             return;
         }
-        // node.getBody().accept(this);
+
+        // hasReturn = false;
+        current = envs.get(node.getName());
+        for (Param p : node.getParams()) {
+            p.getType().accept(this);
+            current.put("PARAM_" + p.getID(), operands.pop());
+        }
+        node.getBody().accept(this);
         // if (!returnMode) {operands.push(null);}
         // returnMode = false;
     }
@@ -145,10 +162,10 @@ public class TypeCheckerVisitor extends Visitor {
     public void visit(Block node) {
         // if (returnMode) return;
         // env.push(new HashMap<>());
-        // for (Cmd cmd : node.getCmds()) {
-        //     cmd.accept(this);
-        //     if (returnMode) break;
-        // }
+        for (Cmd cmd : node.getCmds()) {
+            cmd.accept(this);
+            // if (returnMode) break;
+        }
         // env.pop();
     }
     
@@ -186,6 +203,12 @@ public class TypeCheckerVisitor extends Visitor {
     // }
     @Override
     public void visit(Assign node) {
+
+        // inicialmente assumir que em toda atribuição há um LVALUE na esquerda
+        node.getRhs().accept(this); // avalia lado direito
+        Var left = (Var) node.getLhs();
+        current.put("VAR_" + left.getName(), operands.pop());
+
         // if(returnMode){return;};
         // node.getRhs().accept(this);
         // Object value = operands.pop();
@@ -351,6 +374,7 @@ public class TypeCheckerVisitor extends Visitor {
     
     @Override
     public void visit(NInt node) {
+        operands.push(tyInt);
         // operands.push(Integer.valueOf(node.getValue()));
     }
 
@@ -645,6 +669,7 @@ public void visit(Iterate node) {
     
     @Override
     public void visit(Call node) {   
+
         // //System.out.println("INICIANDO CALL");
         // try {
             

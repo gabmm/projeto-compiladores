@@ -9,12 +9,11 @@
 
 import java.io.FileReader;
 import java.io.Reader;
-import java.io.IOException;;
+import java.io.IOException;
 import parser.Parser;
 import parser.Lexer;
 import ast.Prog;
-import visitors.DotVisitor;
-import visitors.InterpretVisitor;
+import visitors.*;
 
 public class Main {
     public static void main(String[] args) {
@@ -52,6 +51,11 @@ public class Main {
                     DotVisitor dot = new DotVisitor();
                     programNode.accept(dot);
                     dot.saveToFile("ast.dot");
+                    break;
+                case "-tc":
+                    TypeCheckerVisitor typeChecker = new TypeCheckerVisitor();
+                    programNode.accept(typeChecker);
+                    typeChecker.printEnvs();
                     break;
                 default:
                     System.err.println("Diretiva desconhecida: " + directive);

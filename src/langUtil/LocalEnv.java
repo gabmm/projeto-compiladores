@@ -29,8 +29,8 @@ public class LocalEnv<A> extends TyEnv<A>{
     }
 
     public String toString(){
-        String env = "-----------------------------------------------\n";
-        env += "Function " + this.id + "\n";
+        String env = "";
+        env += "Function " + this.id;
         env += funType.toString() + "\n";
         env += super.toString() + "\n";
         return env;
