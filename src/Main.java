@@ -56,6 +56,8 @@ public class Main {
                     TypeCheckerVisitor typeChecker = new TypeCheckerVisitor();
                     programNode.accept(typeChecker);
                     typeChecker.printEnvs();
+                    System.out.println("-----\n");
+                    typeChecker.printData();
                     break;
                 default:
                     System.err.println("Diretiva desconhecida: " + directive);

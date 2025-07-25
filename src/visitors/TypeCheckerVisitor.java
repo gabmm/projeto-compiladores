@@ -13,6 +13,7 @@ import ast.*;
 import langUtil.*;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -40,6 +41,8 @@ public class TypeCheckerVisitor extends Visitor {
     // r. no map da funcao que estou, a current
     private LocalEnv<SType> current;
 
+    private LinkedHashMap<String, STyData> dataDefs;
+
     private Stack<SType> operands;
     private boolean hasReturn;
 
@@ -47,10 +50,17 @@ public class TypeCheckerVisitor extends Visitor {
         envs.printMap();
     }
 
+    public void printData() {
+        for (STyData data : dataDefs.values()) {
+            System.out.println(data.toString());
+        }
+    }
+
     public TypeCheckerVisitor() {
         operands = new Stack<SType>();
         envs = new TyEnv<LocalEnv<SType>>();
         log = new ArrayList<String>();
+        dataDefs = new LinkedHashMap<String, STyData>();
     }
 
     // private Object findVariableAux(String varName){
@@ -150,7 +160,7 @@ public class TypeCheckerVisitor extends Visitor {
         current = envs.get(node.getName());
         for (Param p : node.getParams()) {
             p.getType().accept(this);
-            current.put("PARAM_" + p.getID(), operands.pop());
+            current.put(p.getID(), operands.pop());
         }
         node.getBody().accept(this);
         // if (!returnMode) {operands.push(null);}
@@ -205,9 +215,14 @@ public class TypeCheckerVisitor extends Visitor {
     public void visit(Assign node) {
 
         // inicialmente assumir que em toda atribuição há um LVALUE na esquerda
+
+        if (node.getLhs() instanceof Dot) {
+            node.getLhs().accept(this);
+        }
+
         node.getRhs().accept(this); // avalia lado direito
         Var left = (Var) node.getLhs();
-        current.put("VAR_" + left.getName(), operands.pop());
+        current.put(left.getName(), operands.pop());
 
         // if(returnMode){return;};
         // node.getRhs().accept(this);
@@ -367,6 +382,13 @@ public class TypeCheckerVisitor extends Visitor {
     
     @Override
     public void visit(Var node) {
+        SType varType = current.get(node.getName());
+        if (varType == null) {
+            System.out.println("VAR NAO DECLARADA");
+        } else {
+            operands.push(varType);
+        }
+
         // // Object value = env.peek().get(node.getName());
         // Object value = findVariable(node.getName());
         // operands.push(value);
@@ -468,8 +490,41 @@ public class TypeCheckerVisitor extends Visitor {
         // }                                                         
     }
 
+    /*
+     * Estratégia do DOT aninhado: Vai voltando até chegar a var quando encontra
+     * var, faz o caminho em direção ao fim enquanto faz esse caminho vai colocando
+     * o type do field e pronto! temos o tipo do field no final
+     * meuTriangulo.ladoA.inicio.x = 2;
+     * 
+     * CHAMADA DOT 1 base = meuTriangulo.ladoA.inicio field = x pop no STYDATA do
+     * inicio -> Ponto confere pra ver se Ponto tem field x; se tem push no STYPE de
+     * x;
+     * 
+     * CHAMADA DOT 2 base = meuTriangulo.ladoA field = inicio pop no STYDATA ladoA
+     * -> linha confere pra ver se linha tem field inicio se tem push no STYDATA do
+     * inicio
+     * 
+     * CHAMADA DOT 3 base = meuTriangulo field = ladoA dá pop do SYDATA meuTriangulo
+     * -> Triangulo confere se Triangulo tem field ladoA se tem push no STYDATA
+     * ladoA
+     * 
+     * 
+     * CHAMADA VAR base = Var(meuTriangulo) => retorna o STyData do meuTriangulo pra
+     * chamada dot acima
+     */
+
     @Override
     public void visit(Dot node) {
+
+        node.getBase().accept(this);
+
+        STyData dotBase = (STyData) operands.pop();
+        if (!dotBase.hasField(node.getField())) {
+            System.err.println("NAO TEM FIELD");
+        }
+
+        operands.push(dotBase);
+
         // node.getBase().accept(this);
         // HashMap<String, Object> object = (HashMap<String, Object>) operands.pop();
         // operands.push(object.get(node.getField()));
@@ -477,6 +532,22 @@ public class TypeCheckerVisitor extends Visitor {
     
     @Override
     public void visit(Data node) {
+        if (!dataDefs.containsKey(node.getName())) {
+            LinkedHashMap<String, SType> dataFields = new LinkedHashMap<String, SType>();
+            for (Decl decl : node.getDecls()) {
+                decl.getType().accept(this);
+                dataFields.put(decl.getName(), operands.pop());
+            }
+            STyData data = new STyData(node.getName(), dataFields);
+            dataDefs.put(node.getName(), data);
+        }
+
+        if (node.getFuns().size() != 0) {
+            for (Fun fun : node.getFuns()) {
+                fun.accept(this);
+            }
+        }
+
     //     if (!dataDefs.containsKey(node.getName())) { // armazena decl
     //         dataDefs.put(node.getName(), node);
     //     }
@@ -758,7 +829,11 @@ public void visit(Iterate node) {
 
         @Override
         public void visit(TyId node) {
-            operands.push(new STyData(node.getName()));
+            if (dataDefs.containsKey(node.getName())) {
+                operands.push(dataDefs.get(node.getName()));
+            } else {
+                System.err.println("ERRO - DATA NAO DECLARADA!");
+            }
         }
 
         @Override
@@ -767,6 +842,7 @@ public void visit(Iterate node) {
             node.getBase().accept(this);
             operands.push(new STyArr(operands.pop()));
         }
+
     @Override public void visit(ExpList node) {}
     @Override public void visit(Cmd node) { }
     @Override public void visit(ItCond node) {}

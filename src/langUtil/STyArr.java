@@ -17,7 +17,8 @@ public class STyArr extends SType {
     }
 
     public String toString() {
-        return this.type.toString() + "[]";
+        String baseType = this.type instanceof STyData ? ((STyData) this.type).getID() : this.type.toString();
+        return baseType + "[]";
     }
 }
 
