@@ -1,5 +1,6 @@
 package langUtil;
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.Stack;
 import java.util.TreeMap;
 
@@ -29,10 +30,20 @@ public class LocalEnv<A> extends TyEnv<A>{
     }
 
     public String toString(){
-        String env = "";
+        String env = "\n";
         env += "Function " + this.id;
         env += funType.toString() + "\n";
-        env += super.toString() + "\n";
+        for (Map.Entry<String, A> entry : super.getEnv().entrySet()) {
+            if (!(entry.getValue() instanceof LocalEnv)) {
+                if (entry.getValue() instanceof STyData) {
+                    env += "[ ID: " + entry.getKey() + " TYPE: " + ((STyData) entry.getValue()).getID() + " ]\n";
+                } else {
+                    env += "[ ID: " + entry.getKey() + " TYPE: " + entry.getValue().toString() + " ]\n";
+                }
+
+            }
+        }
+        // env += super.toString() + "\n";
         return env;
     }
 

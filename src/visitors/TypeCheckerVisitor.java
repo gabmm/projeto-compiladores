@@ -214,15 +214,25 @@ public class TypeCheckerVisitor extends Visitor {
     @Override
     public void visit(Assign node) {
 
-        // inicialmente assumir que em toda atribuição há um LVALUE na esquerda
+        node.getRhs().accept(this);
 
-        if (node.getLhs() instanceof Dot) {
-            node.getLhs().accept(this);
+        // se o lado esquerdo é Var:
+        if (node.getLhs() instanceof Var) {
+            Var left = (Var) node.getLhs();
+            current.put(left.getName(), operands.pop());
         }
 
-        node.getRhs().accept(this); // avalia lado direito
-        Var left = (Var) node.getLhs();
-        current.put(left.getName(), operands.pop());
+        // se o lado esquerdo é dot
+        if (node.getLhs() instanceof Dot) {
+            Dot left = (Dot) node.getLhs();
+            left.accept(this); // aqui coloca o tipo do field no topo da pilha
+            if (!operands.pop().match(operands.pop())) {
+                System.err.println("NÃO PERMITIDO!");
+            }
+        }
+
+        // Var left = (Var) node.getLhs();
+        // current.put(left.getName(), operands.pop());
 
         // if(returnMode){return;};
         // node.getRhs().accept(this);
@@ -402,16 +412,19 @@ public class TypeCheckerVisitor extends Visitor {
 
     @Override
     public void visit(NFloat node) {
+        operands.push(tyFloat);
         // operands.push(Float.valueOf(node.getValue()));
     }
 
     @Override
     public void visit(NBool node) {
+        operands.push(tyBool);
         // operands.push(Boolean.valueOf(node.getValue()));
     }
 
     @Override
     public void visit(NChar node) {
+        operands.push(tyChar);
         // operands.push(Character.valueOf(node.getValue()));
     }
 
@@ -446,6 +459,7 @@ public class TypeCheckerVisitor extends Visitor {
 
     @Override
     public void visit(New node) {
+        node.getType().accept(this);
 
     //     //System.out.println("Type: " + node.getType());
     //     TType type = node.getType();
@@ -521,9 +535,9 @@ public class TypeCheckerVisitor extends Visitor {
         STyData dotBase = (STyData) operands.pop();
         if (!dotBase.hasField(node.getField())) {
             System.err.println("NAO TEM FIELD");
+        } else {
+            operands.push(dotBase.getFieldType(node.getField()));
         }
-
-        operands.push(dotBase);
 
         // node.getBase().accept(this);
         // HashMap<String, Object> object = (HashMap<String, Object>) operands.pop();
@@ -535,7 +549,7 @@ public class TypeCheckerVisitor extends Visitor {
         if (!dataDefs.containsKey(node.getName())) {
             LinkedHashMap<String, SType> dataFields = new LinkedHashMap<String, SType>();
             for (Decl decl : node.getDecls()) {
-                decl.getType().accept(this);
+                decl.getType().accept(this); // alterar para entrar no do DECL
                 dataFields.put(decl.getName(), operands.pop());
             }
             STyData data = new STyData(node.getName(), dataFields);

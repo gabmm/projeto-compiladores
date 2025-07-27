@@ -23,6 +23,10 @@ public class TyEnv<A> {
         return this.typeEnv.get(id);
     }
 
+    public TreeMap<String, A> getEnv() {
+        return this.typeEnv;
+    }
+
     public void put(String id, A element){
         this.typeEnv.put(id, element);
     }
@@ -33,10 +37,18 @@ public class TyEnv<A> {
 
     public String toString(){
         String map = "";
-        for (Map.Entry<String, A> entry : this.typeEnv.entrySet()){
-            map += "[ ID: " + entry.getKey() + " TYPE: " + entry.getValue().toString() + "]\n";
-            // map += entry.getValue().toString() + "\n";
+        // for (Map.Entry<String, A> entry : this.typeEnv.entrySet()){
+        // if (entry.getValue() instanceof LocalEnv) {
+        // map +=
+        // }
+        // // map += entry.getValue().toString() + "\n";
 
+        // }
+        for (A element : this.typeEnv.values()) {
+            // System.out.println(element.getClass().toString());
+            if (element instanceof LocalEnv) {
+                map += element.toString();
+            }
         }
         return map;
     }
