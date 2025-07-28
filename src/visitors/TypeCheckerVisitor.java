@@ -43,8 +43,12 @@ public class TypeCheckerVisitor extends Visitor {
 
     private LinkedHashMap<String, STyData> dataDefs;
 
-    private Stack<SType> operands;
+    private operandControler<SType> operands;
     private boolean hasReturn;
+
+    public String getColAndLine(Node node) {
+        return node.getLine() + ", " + node.getCol() + ": ";
+    }
 
     public void printEnvs() {
         envs.printMap();
@@ -52,12 +56,18 @@ public class TypeCheckerVisitor extends Visitor {
 
     public void printData() {
         for (STyData data : dataDefs.values()) {
-            System.out.println(data.toString());
+            System.out.println(data.toStringFull());
+        }
+    }
+
+    public void printErrors() {
+        for (String err : log) {
+            System.out.println(err);
         }
     }
 
     public TypeCheckerVisitor() {
-        operands = new Stack<SType>();
+        operands = new operandControler<SType>(false);
         envs = new TyEnv<LocalEnv<SType>>();
         log = new ArrayList<String>();
         dataDefs = new LinkedHashMap<String, STyData>();
@@ -213,55 +223,25 @@ public class TypeCheckerVisitor extends Visitor {
     // }
     @Override
     public void visit(Assign node) {
-
         node.getRhs().accept(this);
-
-        // se o lado esquerdo é Var:
         if (node.getLhs() instanceof Var) {
             Var left = (Var) node.getLhs();
             current.put(left.getName(), operands.pop());
-        }
-
-        // se o lado esquerdo é dot
-        if (node.getLhs() instanceof Dot) {
-            Dot left = (Dot) node.getLhs();
-            left.accept(this); // aqui coloca o tipo do field no topo da pilha
-            if (!operands.pop().match(operands.pop())) {
-                System.err.println("NÃO PERMITIDO!");
+        } else {
+            node.getLhs().accept(this);
+            SType left = operands.pop();
+            if (left instanceof STyArr) {
+                left = ((STyArr) left).getType();
             }
+            SType right = operands.pop();
+            log.add(getColAndLine(node) + "Atribuicao de " + left.toString() + " para " + right.toString());
+            // if (!left.match(right)) {
+            // log.add(getColAndLine(node) + "Atribuicao de " + left.toString() + " para " +
+            // right.toString());
+            // }
         }
-
-        // Var left = (Var) node.getLhs();
-        // current.put(left.getName(), operands.pop());
-
-        // if(returnMode){return;};
-        // node.getRhs().accept(this);
-        // Object value = operands.pop();
-        // LValue lv = node.getLhs();
-        // String varName = "";
-        // if (lv instanceof Var){ 
-        //     Var var = (Var) lv;
-        //     varName = var.getName();
-            
-        //     addOrUpdateVariable(varName, value);
-        // } else if (lv instanceof ArrayAccess) { 
-        //     ArrayAccess accessNode = (ArrayAccess) lv;
-        
-        //     Object eLv = evaluateLValue(accessNode.getArray()); // função recursiva para avaliar o LValue: se é Var, array, Dot
-        //     accessNode.getIndex().accept(this);
-        //     int finalIndex = (Integer) operands.pop();
-
-        //     if (eLv instanceof List) {
-        //         ((List) eLv).set(finalIndex, value);
-        //     } 
-        // } else if (lv instanceof Dot) {
-        //     Dot dot = (Dot) lv;
-        //     dot.getBase().accept(this);
-        //     HashMap<String, Object> aux = (HashMap<String, Object>) evaluateLValue(dot.getBase());
-        //     aux.put(dot.getField(),value);
-        // }
     }
-    
+
     @Override
     public void visit(Return node) {
         // if (returnMode) return;
@@ -394,7 +374,7 @@ public class TypeCheckerVisitor extends Visitor {
     public void visit(Var node) {
         SType varType = current.get(node.getName());
         if (varType == null) {
-            System.out.println("VAR NAO DECLARADA");
+            log.add(getColAndLine(node) + "Variável " + node.getName() + "não declarada");
         } else {
             operands.push(varType);
         }
@@ -493,15 +473,13 @@ public class TypeCheckerVisitor extends Visitor {
 
     @Override
     public void visit(ArrayAccess node) {
-        // node.getArray().accept(this);
-        // node.getIndex().accept(this);
-        // int index = (Integer) operands.pop();
-        // Object array = operands.pop();
-        // if (array instanceof List) {
-        //     operands.push(((List) array).get(index));
-        // } else if (array.getClass().isArray()) {
-        //     operands.push(java.lang.reflect.Array.get(array, index)); // reflect.array retorna um Objeto genérico
-        // }                                                         
+        node.getIndex().accept(this);
+        SType index = operands.pop();
+        if (!index.match(tyInt)) {
+            log.add(getColAndLine(node) + "Tentativa de acessar array com tipo " + index.toString()
+                    + ". Espera-se INT");
+        }
+        node.getArray().accept(this);
     }
 
     /*
@@ -529,14 +507,19 @@ public class TypeCheckerVisitor extends Visitor {
 
     @Override
     public void visit(Dot node) {
-
         node.getBase().accept(this);
 
-        STyData dotBase = (STyData) operands.pop();
-        if (!dotBase.hasField(node.getField())) {
+        SType dotBase = operands.pop();
+
+        if (dotBase instanceof STyArr) {
+            dotBase = ((STyArr) dotBase).getType();
+        }
+
+        STyData dotBaseData = (STyData) dotBase;
+        if (!dotBaseData.hasField(node.getField())) {
             System.err.println("NAO TEM FIELD");
         } else {
-            operands.push(dotBase.getFieldType(node.getField()));
+            operands.push(dotBaseData.getFieldType(node.getField()));
         }
 
         // node.getBase().accept(this);
@@ -852,7 +835,6 @@ public void visit(Iterate node) {
 
         @Override
         public void visit(TTypeArray node) {
-            // consigo um TType... mas de que tipo?
             node.getBase().accept(this);
             operands.push(new STyArr(operands.pop()));
         }

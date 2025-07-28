@@ -58,6 +58,8 @@ public class Main {
                     typeChecker.printEnvs();
                     System.out.println("-----\n");
                     typeChecker.printData();
+                    System.out.println("-----\n");
+                    typeChecker.printErrors();
                     break;
                 default:
                     System.err.println("Diretiva desconhecida: " + directive);

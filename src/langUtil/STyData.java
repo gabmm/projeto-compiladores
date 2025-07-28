@@ -50,7 +50,7 @@ public class STyData extends SType{
         return true;
     }
 
-    public String toString() {
+    public String toStringFull() {
         String dataString = "Data Type: " + this.id + "\n";
         for (String key : this.fields.keySet()) {
             String fieldType = this.getFieldType(key) instanceof STyData ? ((STyData) this.getFieldType(key)).getID()
@@ -58,6 +58,10 @@ public class STyData extends SType{
             dataString += "[ FIELD: " + key + " TYPE: " + fieldType + " ]\n";
         }
         return dataString;
+    }
+
+    public String toString() {
+        return this.id;
     }
 
 }
