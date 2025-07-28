@@ -8,7 +8,7 @@ public class STyArr extends SType {
     }
 
     public SType getType(){
-        return type;
+        return this.type;
     }
 
     //tipo comparado tem que ser da classe array com a variavel do tipo igual

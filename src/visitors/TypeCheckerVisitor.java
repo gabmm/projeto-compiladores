@@ -221,24 +221,52 @@ public class TypeCheckerVisitor extends Visitor {
         
     //     throw new RuntimeException("Tipo de LValue desconhecido para avaliacao.");
     // }
+
+    private int countArrayAccesses(LValue arr) {
+        int counter = 0;
+
+        if (arr instanceof ArrayAccess) {
+            counter++;
+        } else {
+            return 0;
+        }
+
+        LValue aux = ((ArrayAccess) arr).getArray();
+
+        while (aux instanceof ArrayAccess) {
+            counter++;
+            aux = ((ArrayAccess) aux).getArray();
+        }
+
+        return counter;
+    }
+
     @Override
     public void visit(Assign node) {
         node.getRhs().accept(this);
         if (node.getLhs() instanceof Var) {
             Var left = (Var) node.getLhs();
-            current.put(left.getName(), operands.pop());
+            SType right = operands.pop();
+            current.put(left.getName(), right);
+            // log.add(getColAndLine(node) + "Nova variável " + left.getName() + " do tipo "
+            // + right.toString());
         } else {
             node.getLhs().accept(this);
             SType left = operands.pop();
-            if (left instanceof STyArr) {
+            SType right = operands.pop();
+            int narray = countArrayAccesses(node.getLhs());
+
+            System.out.println(narray);
+            for (int i = 0; i < narray; i++) {
                 left = ((STyArr) left).getType();
             }
-            SType right = operands.pop();
-            log.add(getColAndLine(node) + "Atribuicao de " + left.toString() + " para " + right.toString());
-            // if (!left.match(right)) {
+
             // log.add(getColAndLine(node) + "Atribuicao de " + left.toString() + " para " +
             // right.toString());
-            // }
+
+            if (!left.match(right)) {
+                log.add(getColAndLine(node) + "Atribuicao de " + left.toString() + " para " + right.toString());
+            }
         }
     }
 

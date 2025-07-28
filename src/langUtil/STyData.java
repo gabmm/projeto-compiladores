@@ -42,7 +42,7 @@ public class STyData extends SType{
 
         // os campos tem o mesmo tipo?
         for (String key : this.fields.keySet()) {
-            if (!otherData.hasField(key) || this.getFieldType(key).match(otherData.getFieldType(key))) {
+            if (!otherData.hasField(key) || !this.getFieldType(key).match(otherData.getFieldType(key))) {
                 return false;
             }
         }
