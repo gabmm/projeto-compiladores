@@ -73,54 +73,23 @@ public class TypeCheckerVisitor extends Visitor {
         dataDefs = new LinkedHashMap<String, STyData>();
     }
 
-    // private Object findVariableAux(String varName){
-    //     for (int i = env.size() - 1; i >= 0; i--) {
-    //         if (env.get(i).containsKey(varName)) {
-    //             return env.get(i).get(varName);
-    //         }
-    //     }
-    //     return null;
-    // }
- 
-    // private Object findVariable(String varName) { // encontra valor atual da variável
-    //     Object returnValue = findVariableAux(varName);
+    private int countArrayAccesses(LValue arr) {
+        int counter = 0;
 
-    //     //if (returnValue != null){
-    //         return returnValue;
-    //     //}
+        if (arr instanceof ArrayAccess) {
+            counter++;
+        } else {
+            return 0;
+        }
 
-    //     //throw new RuntimeException("Erro: Variavel '" + varName + "' nao declarada.");
-    // }
+        LValue aux = ((ArrayAccess) arr).getArray();
 
-    private void addVariable(String varName, Object value) { // adiciona a variável criada pela primeira vez no escopo
-        
-        //     if (env.peek().containsKey(varName)) {
-        //         throw new RuntimeException("Erro Semantico: Redefinicao ilegal da variavel '" + varName + "'.");
-        //     }
-        // env.peek().put(varName, value);
-    }
-    
-    private void updateVariable(String varName, Object value) { // altera valor da variavel que já tenha sido inicializada
-        // for (int i = env.size() - 1; i >= 0; i--) {
-        //     if (env.get(i).containsKey(varName)) {
-        //         env.get(i).put(varName, value);
-        //         return;
-        //     }
-        // }
-        // //throw new RuntimeException("Erro: Variavel '" + varName + "' nao declarada para atribuicao.");
-    }
+        while (aux instanceof ArrayAccess) {
+            counter++;
+            aux = ((ArrayAccess) aux).getArray();
+        }
 
-    private void addOrUpdateVariable(String varName, Object value){
-        // Object returnValue = findVariableAux(varName);
-        // if (returnValue != null){
-        //     updateVariable(varName, value);
-        // } else {
-        //     addVariable(varName, value);
-        // }
-    }
-
-    private boolean isInteger(Object number) {
-        return number instanceof Integer;
+        return counter;
     }
 
     @Override
@@ -129,19 +98,15 @@ public class TypeCheckerVisitor extends Visitor {
             def.accept(this);
         }
 
+        if (!envs.hasKey("main")) {
+            log.add(getColAndLine(node) + "Função main não definida");
+        }
+
         for (Def def : node.getDefs()) {
             if (def instanceof Fun) {
                 def.accept(this);
             }
         }
-
-        // for (Def def : node.getDefs()) {
-        //     def.accept(this);
-        // }  
-        // Fun mainFunc = funcs.get("main");
-        // env.push(new HashMap<>()); 
-        // mainFunc.getBody().accept(this);
-        // env.pop(); 
     }
 
    @Override
@@ -166,79 +131,27 @@ public class TypeCheckerVisitor extends Visitor {
             return;
         }
 
-        // hasReturn = false;
         current = envs.get(node.getName());
         for (Param p : node.getParams()) {
             p.getType().accept(this);
             current.put(p.getID(), operands.pop());
         }
         node.getBody().accept(this);
-        // if (!returnMode) {operands.push(null);}
-        // returnMode = false;
     }
 
    
     @Override
     public void visit(Block node) {
-        // if (returnMode) return;
-        // env.push(new HashMap<>());
         for (Cmd cmd : node.getCmds()) {
             cmd.accept(this);
-            // if (returnMode) break;
         }
-        // env.pop();
     }
     
     @Override
     public void visit(CmdList node) {
-        // for (Cmd cmd : node.getCommands()) {
-        //     if(returnMode){return;}
-        //     cmd.accept(this);
-        // }
-    }
-    // private Object evaluateLValue(LValue lvalue) {
-    //    // System.out.println("lvalue: " + lvalue);
-    //     if (lvalue instanceof Var) {
-    //       //  System.out.println("lvalue: " + lvalue);
-    //         return findVariable(((Var) lvalue).getName());
-    //     }
-        
-    //     if (lvalue instanceof Dot) {
-    //         Dot dot = (Dot) lvalue;
-    //         HashMap<String, Object> aux = (HashMap<String, Object>) evaluateLValue(dot.getBase());
-    //         return aux.get(dot.getField());
-    //     }
-        
-    //     if (lvalue instanceof ArrayAccess) {
-    //         ArrayAccess accessNode = (ArrayAccess) lvalue;
-    //         Object collection = evaluateLValue(accessNode.getArray());
-    //         accessNode.getIndex().accept(this);
-    //         int index = (Integer) operands.pop();
-    //         if (collection instanceof List) {
-    //             return ((List) collection).get(index);
-    //         }
-    //     }
-        
-    //     throw new RuntimeException("Tipo de LValue desconhecido para avaliacao.");
-    // }
-
-    private int countArrayAccesses(LValue arr) {
-        int counter = 0;
-
-        if (arr instanceof ArrayAccess) {
-            counter++;
-        } else {
-            return 0;
+        for (Cmd cmd : node.getCommands()) {
+            cmd.accept(this);
         }
-
-        LValue aux = ((ArrayAccess) arr).getArray();
-
-        while (aux instanceof ArrayAccess) {
-            counter++;
-            aux = ((ArrayAccess) aux).getArray();
-        }
-
-        return counter;
     }
 
     @Override
@@ -248,22 +161,14 @@ public class TypeCheckerVisitor extends Visitor {
             Var left = (Var) node.getLhs();
             SType right = operands.pop();
             current.put(left.getName(), right);
-            // log.add(getColAndLine(node) + "Nova variável " + left.getName() + " do tipo "
-            // + right.toString());
         } else {
             node.getLhs().accept(this);
             SType left = operands.pop();
             SType right = operands.pop();
             int narray = countArrayAccesses(node.getLhs());
-
-            System.out.println(narray);
             for (int i = 0; i < narray; i++) {
                 left = ((STyArr) left).getType();
             }
-
-            // log.add(getColAndLine(node) + "Atribuicao de " + left.toString() + " para " +
-            // right.toString());
-
             if (!left.match(right)) {
                 log.add(getColAndLine(node) + "Atribuicao de " + left.toString() + " para " + right.toString());
             }
@@ -272,81 +177,96 @@ public class TypeCheckerVisitor extends Visitor {
 
     @Override
     public void visit(Return node) {
-        // if (returnMode) return;
-        // if (node.getExps() == null || node.getExps().isEmpty()) {
-        //     operands.push(null); 
-        // } else if (node.getExps().size() == 1) { // só um retorno
-        //     node.getExps().get(0).accept(this); 
-        // } else { // vários retornos         
-        //     ArrayList<Object> returnValues = new ArrayList<>();
-        //     for (Exp exp : node.getExps()) {
-        //         exp.accept(this);
-        //         // returnValues.add(0, operands.pop());
-        //         returnValues.add(operands.pop());
-        //     }
-        //     operands.push(returnValues);
-        // }
-        // returnMode = true;
+        SType[] expectedReturns = ((STyFun) current.getType()).getReturns();
+
+        if (expectedReturns.length != node.getExps().size()) {
+            log.add(getColAndLine(node) + "Quantidade de retornos (" + node.getExps().size()
+                    + ") encontrados para a função " + current.getFunctionID() + " incompatível. Esperado: "
+                    + expectedReturns.length);
+        } else {
+            for (int i = 0; i < expectedReturns.length; i++) {
+                node.getExps().get(i).accept(this);
+                SType rType = operands.pop();
+                if (!rType.match(expectedReturns[i])) {
+                    log.add(getColAndLine(node) + "Retorno (" + i + ") da função " + current.getFunctionID()
+                            + " incompatível. Tipo tentado: " + rType.toString() + " Esperado: "
+                            + expectedReturns[i].toString());
+                }
+            }
+        }
     }
 
     @Override
     public void visit(If node) {
-        // if (returnMode) return;
-        // node.getCondition().accept(this);
-        // if ((Boolean) operands.pop()) {
-        //     node.getThenCmd().accept(this);
-        // } else if (node.getElseCmd() != null) {
-        //     node.getElseCmd().accept(this);
-        // }
+        // logica do retcheck vem aqui
+        node.getCondition().accept(this);
+        SType condType = operands.pop();
+        if (!condType.match(tyBool)) {
+            log.add(getColAndLine(node) + "Condição do IF deve ser to tipo Bool. Tipo encontrado: "
+                    + condType.toString());
+        }
+        node.getThenCmd().accept(this);
+        if (node.getElseCmd() != null) {
+            node.getElseCmd().accept(this);
+        }
     }
 
     @Override
     public void visit(CallStmt node) {
-    //    // System.out.println("INICIANDO CALLSTMT");
-    //     try {
-    //         Fun fun = funcs.get(node.getID()); // acho a funcao
-    //     if (fun == null) throw new RuntimeException("Função não encontrada: " + node.getID());
-    //     List<Param> funcParams = fun.getParams();
-    //     if (fun != null) {
-    //         for (Exp arg : node.getArgs()) {
-    //             arg.accept(this); // empilho os argumentos
-    //         }
-            
-    //         env.push(new HashMap<String, Object>());
+        if (!envs.hasKey(node.getID())) {
+            log.add(getColAndLine(node) + "Função " + node.getID() + " não declarada");
+            return;
+        }
 
-    //         for (int i = funcParams.size() - 1; i >= 0; i--) {
-    //             env.peek().put(funcParams.get(i).getID(), operands.pop());
-    //         }
-    //         if (fun.getBody() == null) {
-    //                 throw new RuntimeException("Erro: A funcao '" + fun.getName() + "' nao tem um corpo para ser executado.");
-    //             }
-    //         fun.getBody().accept(this);
+        STyFun funType = (STyFun) envs.get(node.getID()).getType();
 
-    //         Object returnValue = operands.pop();
+        if (funType.getParams().length != node.getArgs().size()) {
+            log.add(getColAndLine(node) + "Número de argumentos (" + node.getArgs().size()
+                    + ") incompatível com a chamada da função " + node.getID() + ". Número esperado: "
+                    + funType.getParams().length);
+        } else {
+            for (int i = 0; i < node.getArgs().size(); i++) {
+                node.getArgs().get(i).accept(this);
+                SType arg = operands.pop();
+                SType param = funType.getParams()[i];
+                if (!arg.match(param)) {
+                    log.add(getColAndLine(node) + "Tipo do argumento " + i + " " + arg.toString()
+                            + " incompatível com a função " + node.getID() + ". Tipo esperado: " + param.toString());
+                }
+            }
+        }
 
-    //         env.pop();
-    //         returnMode = false;
-    //         List<LValue> returnLValues = node.getReturns();
-    //         if (returnLValues != null && !returnLValues.isEmpty()) {
-    //             // Se a função retornou múltiplos valores (uma Lista)
-    //             if (returnValue instanceof List) {
-    //                 List<Object> returns = (List<Object>) returnValue;
-    //                 for (int i = 0; i < returnLValues.size(); i++) {
-    //                     String varName = ((Var) returnLValues.get(i)).getName();
-    //                     updateVariable(varName, returns.get(i));
-    //                 }
-    //             } else { // Se a função retornou um único valor
-    //                 String varName = ((Var) returnLValues.get(0)).getName();
-    //                 updateVariable(varName, returnValue);
-    //             }
-    //         }
-    //     }
-    //     } catch (Exception e) {
-    //         e.printStackTrace();
-    //         throw new RuntimeException("Erro durante a execução da função '" + node.getID() + "'.", e);
-    //     }
-        
+        if (funType.getReturns().length != node.getReturns().size()) {
+            log.add(getColAndLine(node) + "Número de retornos (" + node.getReturns().size()
+                    + ") incompatível com a chamada da função " + node.getID() + ". Número esperado: "
+                    + funType.getReturns().length);
+        } else {
+            for (int i = 0; i < node.getReturns().size(); i++) {
+                LValue ret = node.getReturns().get(i);
+                SType funRet = funType.getReturns()[i];
+                if (ret instanceof Var) {
+                    if (!current.hasKey(((Var) ret).getName())) {
+                        log.add(getColAndLine(node) + "Varíavel de retorno " + ((Var) ret).getName()
+                                + " não declarada durante chamada da função " + node.getID());
+                    }
+                    current.put(((Var) ret).getName(), funRet);
+                } else {
+                    ret.accept(this);
+                    SType retType = operands.pop();
+                    int narray = countArrayAccesses(ret);
+                    for (int j = 0; j < narray; j++) {
+                        retType = ((STyArr) retType).getType();
+                    }
+                    if (!retType.match(funRet)) {
+                        log.add(getColAndLine(node) + "Tentativa de retornar (" + i + ") " + funRet.toString()
+                                + " para variável do tipo " + retType.toString() + " durante chamada da função "
+                                + node.getID());
+                    }
+                }
+            }
+        }
     }
+
     
     @Override
     public void visit(Add node) {
@@ -415,25 +335,21 @@ public class TypeCheckerVisitor extends Visitor {
     @Override
     public void visit(NInt node) {
         operands.push(tyInt);
-        // operands.push(Integer.valueOf(node.getValue()));
     }
 
     @Override
     public void visit(NFloat node) {
         operands.push(tyFloat);
-        // operands.push(Float.valueOf(node.getValue()));
     }
 
     @Override
     public void visit(NBool node) {
         operands.push(tyBool);
-        // operands.push(Boolean.valueOf(node.getValue()));
     }
 
     @Override
     public void visit(NChar node) {
         operands.push(tyChar);
-        // operands.push(Character.valueOf(node.getValue()));
     }
 
     @Override
@@ -510,29 +426,6 @@ public class TypeCheckerVisitor extends Visitor {
         node.getArray().accept(this);
     }
 
-    /*
-     * Estratégia do DOT aninhado: Vai voltando até chegar a var quando encontra
-     * var, faz o caminho em direção ao fim enquanto faz esse caminho vai colocando
-     * o type do field e pronto! temos o tipo do field no final
-     * meuTriangulo.ladoA.inicio.x = 2;
-     * 
-     * CHAMADA DOT 1 base = meuTriangulo.ladoA.inicio field = x pop no STYDATA do
-     * inicio -> Ponto confere pra ver se Ponto tem field x; se tem push no STYPE de
-     * x;
-     * 
-     * CHAMADA DOT 2 base = meuTriangulo.ladoA field = inicio pop no STYDATA ladoA
-     * -> linha confere pra ver se linha tem field inicio se tem push no STYDATA do
-     * inicio
-     * 
-     * CHAMADA DOT 3 base = meuTriangulo field = ladoA dá pop do SYDATA meuTriangulo
-     * -> Triangulo confere se Triangulo tem field ladoA se tem push no STYDATA
-     * ladoA
-     * 
-     * 
-     * CHAMADA VAR base = Var(meuTriangulo) => retorna o STyData do meuTriangulo pra
-     * chamada dot acima
-     */
-
     @Override
     public void visit(Dot node) {
         node.getBase().accept(this);
@@ -545,14 +438,11 @@ public class TypeCheckerVisitor extends Visitor {
 
         STyData dotBaseData = (STyData) dotBase;
         if (!dotBaseData.hasField(node.getField())) {
-            System.err.println("NAO TEM FIELD");
+            log.add(getColAndLine(node) + "Campo " + node.getField() + " não encontrado para o tipo "
+                    + dotBase.toString());
         } else {
             operands.push(dotBaseData.getFieldType(node.getField()));
         }
-
-        // node.getBase().accept(this);
-        // HashMap<String, Object> object = (HashMap<String, Object>) operands.pop();
-        // operands.push(object.get(node.getField()));
     }
     
     @Override
@@ -572,23 +462,13 @@ public class TypeCheckerVisitor extends Visitor {
                 fun.accept(this);
             }
         }
-
-    //     if (!dataDefs.containsKey(node.getName())) { // armazena decl
-    //         dataDefs.put(node.getName(), node);
-    //     }
-    //     List<Fun> func = node.getFuns();
-    //     if (func != null && !func.isEmpty()) { // Abstract data - armazena  fun 
-    //         String name = node.getName();
-    //         for (Fun f : func) {
-    //             String funcDotName = name + "." + f.getName(); // para metodos função.nome()
-    //             funcs.put(funcDotName, f);
-    //         }
-    // }
     }
+
     @Override 
     public void visit(ItCondExp node) {
         // node.getCond().accept(this);
      }
+
     @Override 
     public void visit(ItCondId node) {
         // node.getCond().accept(this);
@@ -764,7 +644,56 @@ public void visit(Iterate node) {
 
     
     @Override
-    public void visit(Call node) {   
+    public void visit(Call node) {
+        // uma exp sempre deve colocar algo na pilha, portanto, quando não tiver retorno
+        // ou nao for declarda, da push no typeerror
+
+        if (!envs.hasKey(node.getFuncName())) {
+            log.add(getColAndLine(node) + "Função " + node.getFuncName() + " não declarada");
+            return;
+        }
+
+        STyFun funType = (STyFun) envs.get(node.getFuncName()).getType();
+        SType[] retTypes = funType.getReturns();
+
+        if (retTypes.length == 0) {
+            log.add(getColAndLine(node) + "Função " + node.getFuncName() + " não possui retornos");
+            operands.push(tyBool); // mudar pra typeError quando for criado
+            return;
+        }
+
+        if (funType.getParams().length != node.getArgs().size()) {
+            log.add(getColAndLine(node) + "Número de argumentos (" + node.getArgs().size()
+                    + ") incompatível com a chamada da função " + node.getFuncName() + ". Número esperado: "
+                    + funType.getParams().length);
+        } else {
+            for (int i = 0; i < node.getArgs().size(); i++) {
+                node.getArgs().get(i).accept(this);
+                SType arg = operands.pop();
+                SType param = funType.getParams()[i];
+                if (!arg.match(param)) {
+                    log.add(getColAndLine(node) + "Tipo do argumento " + i + " " + arg.toString()
+                            + " incompatível com a função " + node.getFuncName() + ". Tipo esperado: "
+                            + param.toString());
+                }
+            }
+        }
+
+        node.getIndex().accept(this);
+        SType ret = operands.pop();
+        if (!ret.match(tyInt)) {
+            log.add(getColAndLine(node) + "Tipo do índice do retorno da chamada da função " + node.getFuncName() + " é "
+                    + ret.toString() + ". Esperado: " + tyInt.toString());
+            operands.push(tyBool); // mudar pra typeError quando for criado
+        } else {
+            if (!(node.getIndex() instanceof NInt)) {
+                log.add(getColAndLine(node) + "Índice do retorno da chamada da função " + node.getFuncName()
+                        + " não é um literal inteiro!");
+                operands.push(tyBool); // mudar pra typeError quando for criado
+            } else {
+                operands.push(retTypes[((NInt) node.getIndex()).getValue()]);
+            }
+        }
 
         // //System.out.println("INICIANDO CALL");
         // try {
