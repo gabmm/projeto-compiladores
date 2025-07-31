@@ -35,6 +35,12 @@ public class TyEnv<A> {
         return this.typeEnv.containsKey(key);
     }
 
+    public TyEnv<A> clonEnv() {
+        TyEnv<A> copy = new TyEnv<>();
+        copy.typeEnv.putAll(this.typeEnv);
+        return copy;
+    }
+
     public String toString(){
         String map = "";
         // for (Map.Entry<String, A> entry : this.typeEnv.entrySet()){

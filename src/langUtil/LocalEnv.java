@@ -29,6 +29,12 @@ public class LocalEnv<A> extends TyEnv<A>{
         return this.funType;
     }
 
+    public LocalEnv<A> cloneEnv() {
+        LocalEnv<A> copy = new LocalEnv<>(this.id, this.funType);
+        copy.getEnv().putAll(super.clonEnv().getEnv());
+        return copy;
+    }
+
     public String toString(){
         String env = "\n";
         env += "Function " + this.id;

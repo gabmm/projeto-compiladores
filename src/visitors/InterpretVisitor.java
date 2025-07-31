@@ -547,6 +547,12 @@ public class InterpretVisitor extends Visitor {
         System.out.println(operands.pop());
     }
 
+    /*
+     * CORRIGIR BUG: iterate pode aceitar vetor como expressão se for itCondExp,
+     * itera ao longo do tamanho se for itCondID, itera ao longo to tamanho com a
+     * variavel recebendo o valor do elemento
+     */
+
     @Override
 public void visit(Iterate node) {
     if (returnMode) return;

@@ -29,6 +29,7 @@ public class TypeCheckerVisitor extends Visitor {
     private STyFloat tyFloat = STyFloat.initSTyFloat();
     private STyChar tyChar = STyChar.initSTyChar();
     private STyBool tyBool = STyBool.initSTyBool();
+    private STyError tyError = STyError.iniSTyError();
 
     private ArrayList<String> log;
 
@@ -44,7 +45,7 @@ public class TypeCheckerVisitor extends Visitor {
     private LinkedHashMap<String, STyData> dataDefs;
 
     private operandControler<SType> operands;
-    private boolean hasReturn;
+    private boolean hasReturnStmt;
 
     public String getColAndLine(Node node) {
         return node.getLine() + ", " + node.getCol() + ": ";
@@ -71,6 +72,7 @@ public class TypeCheckerVisitor extends Visitor {
         envs = new TyEnv<LocalEnv<SType>>();
         log = new ArrayList<String>();
         dataDefs = new LinkedHashMap<String, STyData>();
+        hasReturnStmt = false;
     }
 
     private int countArrayAccesses(LValue arr) {
@@ -131,12 +133,16 @@ public class TypeCheckerVisitor extends Visitor {
             return;
         }
 
+        hasReturnStmt = false;
         current = envs.get(node.getName());
         for (Param p : node.getParams()) {
             p.getType().accept(this);
             current.put(p.getID(), operands.pop());
         }
         node.getBody().accept(this);
+        if (!hasReturnStmt && !node.getName().equals("main")) {
+            log.add(getColAndLine(node) + "Função " + node.getName() + " não possui comando de retorno");
+        }
     }
 
    
@@ -157,6 +163,13 @@ public class TypeCheckerVisitor extends Visitor {
     @Override
     public void visit(Assign node) {
         node.getRhs().accept(this);
+
+        /*
+         * Se entra no IF, é atribuição para variável simples logo pode ser feita de
+         * qualquer forma. Se entra no ELSE, então é array ou data Nesse caso a
+         * atribuição deve ser do mesmo tipo
+         */
+
         if (node.getLhs() instanceof Var) {
             Var left = (Var) node.getLhs();
             SType right = operands.pop();
@@ -170,7 +183,8 @@ public class TypeCheckerVisitor extends Visitor {
                 left = ((STyArr) left).getType();
             }
             if (!left.match(right)) {
-                log.add(getColAndLine(node) + "Atribuicao de " + left.toString() + " para " + right.toString());
+                log.add(getColAndLine(node) + "Atribuição inválida de " + left.toString() + " para "
+                        + right.toString());
             }
         }
     }
@@ -194,21 +208,35 @@ public class TypeCheckerVisitor extends Visitor {
                 }
             }
         }
+
+        hasReturnStmt = true;
     }
 
     @Override
     public void visit(If node) {
-        // logica do retcheck vem aqui
+        boolean retOnThen = false;
+        boolean retOnElse = true; // caso não houver else, não atrapalha
+
         node.getCondition().accept(this);
         SType condType = operands.pop();
+
         if (!condType.match(tyBool)) {
-            log.add(getColAndLine(node) + "Condição do IF deve ser to tipo Bool. Tipo encontrado: "
+            log.add(getColAndLine(node) + "Condição do IF deve ser to tipo BOOL. Tipo encontrado: "
                     + condType.toString());
         }
+
+        hasReturnStmt = false;
         node.getThenCmd().accept(this);
+        retOnThen = hasReturnStmt;
+
         if (node.getElseCmd() != null) {
+            hasReturnStmt = false;
             node.getElseCmd().accept(this);
+            retOnElse = hasReturnStmt;
         }
+
+        // atualiza valor do return
+        hasReturnStmt = retOnElse && retOnThen;
     }
 
     @Override
@@ -267,55 +295,64 @@ public class TypeCheckerVisitor extends Visitor {
         }
     }
 
-    
+    private void checkArithmeticBinOp(Node node, String op) {
+        SType leftExp = operands.pop();
+        SType rightExp = operands.pop();
+
+        if (leftExp.match(tyInt) && leftExp.match(rightExp)) {
+            operands.push(tyInt);
+        } else if (!op.equals("MOD") && leftExp.match(tyFloat) && leftExp.match(rightExp)) {
+            operands.push(tyFloat);
+        } else {
+            log.add(getColAndLine(node) + "Operação " + op + " não permitida para os tipos: " + leftExp.toString()
+                    + " e " + rightExp.toString());
+        }
+    }
+
+    private void checkBooleanBinOp(Node node, String op) {
+        SType leftExp = operands.pop();
+        SType rightExp = operands.pop();
+
+        if (leftExp.match(rightExp) && (leftExp.match(tyInt) || leftExp.match(tyFloat) || leftExp.match(tyChar))) {
+            operands.push(tyBool);
+        } else {
+            operands.push(tyError);
+            log.add(getColAndLine(node) + "Operação " + op + " não permitida para os tipos: " + leftExp.toString()
+                    + " e " + rightExp.toString());
+        }
+    }
+
     @Override
     public void visit(Add node) {
-        // node.getLeft().accept(this);
-        // node.getRight().accept(this);
-        // Number left, right;
-        // right = (Number) operands.pop();
-        // left = (Number) operands.pop();
-        // if (isInteger(right) && isInteger(left)) {
-        //     operands.push(Integer.valueOf(left.intValue() + right.intValue()));
-        // } else {
-        //     operands.push(Float.valueOf(left.floatValue() + right.floatValue()));
-        // }
+        node.getRight().accept(this);
+        node.getLeft().accept(this);
+        checkArithmeticBinOp(node, "ADD");
     }
 
     @Override
     public void visit(And node) {
-        // node.getLeft().accept(this);
-        // node.getRight().accept(this);
-        // Boolean left, right;
-        // right = (Boolean) operands.pop();
-        // left = (Boolean) operands.pop();
-        // operands.push(Boolean.valueOf(right && left));
+        node.getRight().accept(this);
+        node.getLeft().accept(this);
+        checkBooleanBinOp(node, "AND");
     }
 
     @Override
     public void visit(Or node) {
-        // node.getLeft().accept(this);
-        // boolean left = (Boolean) operands.pop();
-        // if (left) { 
-        //     operands.push(true);
-        //     return;
-        // }
-        // node.getRight().accept(this);
-        // operands.push(operands.pop());
+        // não há OR nessa linguagem
     }
 
     @Override
     public void visit(Eq node) {
-        // node.getLeft().accept(this);
-        // node.getRight().accept(this);
-        // operands.push(Boolean.valueOf(operands.pop().equals(operands.pop())));
+        node.getRight().accept(this);
+        node.getLeft().accept(this);
+        checkBooleanBinOp(node, "EQ");
     }
 
     @Override
     public void visit(Neq node) {
-        // node.getRight().accept(this);
-        // node.getLeft().accept(this);
-        // operands.push(!Boolean.valueOf(operands.pop().equals(operands.pop())));
+        node.getRight().accept(this);
+        node.getLeft().accept(this);
+        checkBooleanBinOp(node, "NEQ");
     }
     
     @Override
@@ -326,10 +363,6 @@ public class TypeCheckerVisitor extends Visitor {
         } else {
             operands.push(varType);
         }
-
-        // // Object value = env.peek().get(node.getName());
-        // Object value = findVariable(node.getName());
-        // operands.push(value);
     }
     
     @Override
@@ -357,62 +390,9 @@ public class TypeCheckerVisitor extends Visitor {
         // operands.push(null); 
     }
 
-    // private ArrayList<Object> createMultiArray(TType typeNode, List<Exp> dimensions) { // recursivo
-    //     if (!(typeNode instanceof TTypeArray)) { 
-    //         return null; 
-    //     }
-        
-    //     TTypeArray arrayType = (TTypeArray) typeNode;
-        
-    //     if (dimensions == null || dimensions.isEmpty()) {
-    //         return null; 
-    //     }
-        
-    //     dimensions.get(0).accept(this);
-    //     int size = (Integer) operands.pop(); 
-        
-    //     List<Exp> dimensionAux = dimensions.subList(1, dimensions.size());
-    //     ArrayList<Object> newArray = new ArrayList<>(); 
-        
-    //     for (int i = 0; i < size; i++) { 
-    //        Object subVet = createMultiArray(arrayType.getBase(), dimensionAux);
-    //         newArray.add(subVet); 
-    //     }
-    //     return newArray;
-    // }
-
     @Override
     public void visit(New node) {
         node.getType().accept(this);
-
-    //     //System.out.println("Type: " + node.getType());
-    //     TType type = node.getType();
-    //     List<Exp> dimensions = node.getDimensions();
-    //    // TType t2 = t.getBase();
-
-    //    if (dimensions.isEmpty()){
-    //         if (type instanceof TyId) {
-    //            // System.out.println("eh TyId: " + node.getType());
-    //             String dataName = ((TyId) node.getType()).getName();
-    //             Data dataDef = dataDefs.get(dataName);
-    //             HashMap<String, Object> newInstance = new HashMap<>();
-    //             for (Decl field : dataDef.getDecls()) {
-    //                 newInstance.put(field.getName(), null);
-    //             }
-    //             operands.push(newInstance);
-    //         } 
-    //    }
-    //    else{
-    //        // System.out.println("Eh array: " + type);
-    //         TType typeAux = type;
-    //         for(int i = 0; i < dimensions.size(); i++){ 
-    //             typeAux = new TTypeArray(typeAux);
-    //         }    
-    //         ArrayList<Object> newArray = createMultiArray(typeAux, dimensions);
-    //        // System.out.println("novo array: " + newArray);
-    //         operands.push(newArray);        
-    //    }
-        
     }
 
     @Override
@@ -440,6 +420,7 @@ public class TypeCheckerVisitor extends Visitor {
         if (!dotBaseData.hasField(node.getField())) {
             log.add(getColAndLine(node) + "Campo " + node.getField() + " não encontrado para o tipo "
                     + dotBase.toString());
+            operands.push(tyError);
         } else {
             operands.push(dotBaseData.getFieldType(node.getField()));
         }
@@ -450,10 +431,19 @@ public class TypeCheckerVisitor extends Visitor {
         if (!dataDefs.containsKey(node.getName())) {
             LinkedHashMap<String, SType> dataFields = new LinkedHashMap<String, SType>();
             for (Decl decl : node.getDecls()) {
-                decl.getType().accept(this); // alterar para entrar no do DECL
+                decl.accept(this);
                 dataFields.put(decl.getName(), operands.pop());
             }
-            STyData data = new STyData(node.getName(), dataFields);
+            STyData data;
+            if (node.isAbstract()) {
+                String[] relatedFuns = new String[node.getFuns().size()];
+                for (int i = 0; i < node.getFuns().size(); i++) {
+                    relatedFuns[i] = node.getFuns().get(i).getName();
+                }
+                data = new STyData(node.getName(), dataFields, relatedFuns);
+            } else {
+                data = new STyData(node.getName(), dataFields);
+            }
             dataDefs.put(node.getName(), data);
         }
 
@@ -466,181 +456,154 @@ public class TypeCheckerVisitor extends Visitor {
 
     @Override 
     public void visit(ItCondExp node) {
-        // node.getCond().accept(this);
+        node.getCond().accept(this);
+        SType condExp = operands.pop();
+
+        if (!(condExp.match(tyInt) || condExp instanceof STyArr)) {
+            log.add(getColAndLine(node) + "Condição para iteração é do tipo " + condExp.toString()
+                    + ". Esperado: INT ou []");
+        }
      }
 
     @Override 
     public void visit(ItCondId node) {
-        // node.getCond().accept(this);
+        /*
+         * Caso Exp seja INT: ID tem que ser INT ou Não existir no contexto de tipos
+         * 
+         * Caso Exp seja Array: ID tem que ser do mesmo tipo do Array ou Nao existir no
+         * contexto de tipos
+         */
+
+        node.getCond().accept(this);
+        SType condExp = operands.pop();
+        SType varType;
+
+        if (condExp.match(tyInt)) {
+            if (current.hasKey(node.getID())) {
+                varType = current.get(node.getID());
+                if (!varType.match(tyInt)) {
+                    log.add(getColAndLine(node) + "Variável de iteração é do tipo " + varType.toString()
+                            + "Esperado: INT");
+                }
+            } else {
+                current.put(node.getID(), tyInt);
+            }
+        } else if (condExp instanceof STyArr) {
+            if (current.hasKey(node.getID())) {
+                varType = current.get(node.getID());
+                if (!((STyArr) condExp).getType().match(varType)) {
+                    log.add(getColAndLine(node) + "Variável de iteração é do tipo " + varType.toString() + "Esperado: "
+                            + ((STyArr) condExp).getType().toString());
+                } else {
+                    current.put(node.getID(), ((STyArr) condExp).getType());
+                }
+            }
+        } else {
+            log.add(getColAndLine(node) + "Condição para iteração é do tipo " + condExp.toString()
+                    + ". Esperado: INT ou []");
+        }
      }
 
     @Override
-    public void visit(Attr node) { // acho que não precisa dessa, seria igual o assign 
-        
+    public void visit(Attr node) {
+        // Não há Attr nessa linguagem, o correto é Assign
     }
     @Override 
-     public void visit(FieldAccess node) { // acho que não precisa dessa, seria mesma coisa que o DOT
-        // node.getTarget().accept(this);
-        // HashMap<String, Object> ob = ( HashMap<String, Object>) operands.pop();
-        // operands.push(ob.get(node.getField()));
+    public void visit(FieldAccess node) {
+        // Não há FieldAccess nessa linguagem, o correto é Dot
     }
 
     @Override
     public void visit(Sub node) {
-        // node.getLeft().accept(this);
-        // node.getRight().accept(this);
-        // Number left, right;
-        // right = (Number) operands.pop();
-        // left = (Number) operands.pop();
-        // if (isInteger(right) && isInteger(left)) {
-        //     operands.push(Integer.valueOf(left.intValue() - right.intValue()));
-        // } else {
-        //     operands.push(Float.valueOf(left.floatValue() - right.floatValue()));
-        // }
+        node.getRight().accept(this);
+        node.getLeft().accept(this);
+        checkArithmeticBinOp(node, "SUB");
     }
 
     @Override
     public void visit(Mul node) {
-        // node.getLeft().accept(this);
-        // node.getRight().accept(this);
-        // Number left, right;
-        // right = (Number) operands.pop();
-        // left = (Number) operands.pop();
-        // if (isInteger(right) && isInteger(left)) {
-        //     operands.push(Integer.valueOf(left.intValue() * right.intValue()));
-        // } else {
-        //     operands.push(Float.valueOf(left.floatValue() * right.floatValue()));
-        // }
+        node.getRight().accept(this);
+        node.getLeft().accept(this);
+        checkArithmeticBinOp(node, "MUL");
     }
 
     @Override
     public void visit(Div node) {
-        // node.getLeft().accept(this);
-        // node.getRight().accept(this);
-        // Number left, right;
-        // right = (Number) operands.pop();
-        // left = (Number) operands.pop();
-        // if (isInteger(right) && isInteger(left)) {
-        //     operands.push(Integer.valueOf(left.intValue() / right.intValue()));
-        // } else {
-        //     operands.push(Float.valueOf(left.floatValue() / right.floatValue()));
-        // }
+        node.getRight().accept(this);
+        node.getLeft().accept(this);
+        checkArithmeticBinOp(node, "DIV");
     }
 
     @Override
     public void visit(Mod node) {
-        // node.getLeft().accept(this);
-        // node.getRight().accept(this);
-        // int left, right;
-        // right = (Integer) operands.pop();
-        // left = (Integer) operands.pop();
-        // operands.push(Integer.valueOf(left % right));
+        node.getRight().accept(this);
+        node.getLeft().accept(this);
+        checkArithmeticBinOp(node, "MOD");
     }
 
     @Override
     public void visit(Lt node) {
-        // try {
-        //     node.getLeft().accept(this);
-        //     node.getRight().accept(this);
-        //     Number right = (Number) operands.pop();
-        //     Number left = (Number) operands.pop();
-        //     operands.push(left.floatValue() < right.floatValue());
-        // } catch (Exception e) {
-        //      e.printStackTrace();
-        //     throw new RuntimeException( " (" + node.getLine() + ", " + node.getCol() + ") " + e.getMessage() );
-        // }
+        node.getRight().accept(this);
+        node.getLeft().accept(this);
+        checkBooleanBinOp(node, "LT");
     }
 
     @Override
     public void visit(NNot node) {
-        // node.getExp().accept(this);
-        // operands.push(!(Boolean) operands.pop());
+        node.getExp().accept(this);
+        SType expType = operands.pop();
+        if (expType.match(tyBool)) {
+            operands.push(tyBool);
+        } else {
+            log.add(getColAndLine(node) + "Operação NOT não permitida para o tipo: " + expType.toString());
+            operands.push(tyError);
+        }
     }
 
     @Override
     public void visit(Neg node) {
-        // node.getExp().accept(this);
-        // Number exp = (Number) operands.pop();
-        // if (isInteger(exp)) {
-        //     operands.push(-1 * Integer.valueOf(exp.intValue()));
-        // } else {
-        //     operands.push(-1 * Float.valueOf(exp.floatValue()));
-        // }
+        node.getExp().accept(this);
+        SType expType = operands.pop();
+        if (expType.match(tyInt)) {
+            operands.push(tyInt);
+        } else if (expType.match(tyFloat)) {
+            operands.push(tyFloat);
+        } else {
+            log.add(getColAndLine(node) + "Operação NEG não permitida para o tipo: " + expType.toString());
+            operands.push(tyError);
+        }
     }
 
 
     @Override
     public void visit(Decl node) {
-        // addVariable(node.getName(), null);
+        node.getType().accept(this);
     }
 
     @Override
     public void visit(Print node) {
-        // if (returnMode) return;
-        // node.getExpr().accept(this);
-        // System.out.println(operands.pop());
+        node.getExpr().accept(this);
+        SType expType = operands.pop();
+        if (!(expType.match(tyInt) || expType.match(tyFloat) || expType.match(tyChar) || expType.match(tyBool))) {
+            log.add(getColAndLine(node) + "Operação NEG não permitida para o tipo: " + expType.toString());
+        }
     }
 
+    /*
+     * Necessário preservar o contexto eu clono o contexto, o altero como quiser
+     * retorno o contexto. Se eu declaro uma variavel la dentro, na volta ela nao
+     * pode existir se eu altero o tipo de uma var la dentro, na volta ela tem q ter
+     * o tipo original
+     */
+
     @Override
-public void visit(Iterate node) {
-    // if (returnMode) return;
-
-    // ItCond cond = node.getCondition();
-    // if (cond instanceof ItCondExp) {
-    //     ItCondExp itExp = (ItCondExp) cond;
-    //     itExp.getCond().accept(this);
-    //     Object result = operands.pop();
-    //     if (!(result instanceof Integer)) {
-    //         throw new RuntimeException("Erro: iterate(N) espera uma expressão inteira, mas recebeu " + result.getClass().getName());
-    //     }
-
-    //     int times = (Integer) result;
-    //     for (int i = 0; i < times; i++) {
-    //         node.getBody().accept(this);
-    //         if (returnMode) {
-    //             break;
-    //         }
-    //     }
-    // }
-    // else if (cond instanceof ItCondId) {
-    //     ItCondId itId = (ItCondId) cond;
-    //     String varName = itId.getID(); 
-
-    //     itId.getCond().accept(this);
-    //     Object collectionOrNumber = operands.pop();
-    //     if (collectionOrNumber instanceof List) {
-    //         List<?> collection = (List<?>) collectionOrNumber;
-    //         env.push(new HashMap<>());
-    //         addVariable(varName, null);
-
-    //         for (Object item : collection) {
-    //             updateVariable(varName, item); 
-    //             node.getBody().accept(this);   
-    //             if (returnMode) break;
-    //         }
-
-    //         env.pop(); 
-    //     }
-    //     else if (collectionOrNumber instanceof Integer) {
-    //         int limit = (Integer) collectionOrNumber;
-
-    //         env.push(new HashMap<>());
-    //         addVariable(varName, null);
-
-    //         for (int i = 0; i < limit; i++) {
-    //             updateVariable(varName, i); 
-    //             node.getBody().accept(this);
-    //             if (returnMode) break;
-    //         }
-
-    //         env.pop();
-    //     }
-    //     else {
-    //         String typeName = (collectionOrNumber != null) ? collectionOrNumber.getClass().getName() : "null";
-    //         throw new RuntimeException("Erro: A expressão em iterate(id: expr) deve ser um array ou um inteiro, mas foi " + typeName);
-    //     }
-    // }
-}
+    public void visit(Iterate node) {
+        LocalEnv<SType> aux = current.cloneEnv(); // ignorando modificações no contexto de tipos
+        node.getCondition().accept(this);
+        node.getBody().accept(this);
+        current = aux;
+        envs.put(current.getFunctionID(), aux);
+    }
 
     
     @Override
@@ -658,7 +621,7 @@ public void visit(Iterate node) {
 
         if (retTypes.length == 0) {
             log.add(getColAndLine(node) + "Função " + node.getFuncName() + " não possui retornos");
-            operands.push(tyBool); // mudar pra typeError quando for criado
+            operands.push(tyError);
             return;
         }
 
@@ -684,66 +647,18 @@ public void visit(Iterate node) {
         if (!ret.match(tyInt)) {
             log.add(getColAndLine(node) + "Tipo do índice do retorno da chamada da função " + node.getFuncName() + " é "
                     + ret.toString() + ". Esperado: " + tyInt.toString());
-            operands.push(tyBool); // mudar pra typeError quando for criado
+            operands.push(tyError);
         } else {
             if (!(node.getIndex() instanceof NInt)) {
                 log.add(getColAndLine(node) + "Índice do retorno da chamada da função " + node.getFuncName()
                         + " não é um literal inteiro!");
-                operands.push(tyBool); // mudar pra typeError quando for criado
+                operands.push(tyError);
             } else {
                 operands.push(retTypes[((NInt) node.getIndex()).getValue()]);
             }
         }
-
-        // //System.out.println("INICIANDO CALL");
-        // try {
-            
-        //     Fun fun = funcs.get(node.getFuncName());
-        //     if (fun == null) throw new RuntimeException("Função não encontrada: " + node.getFuncName());
-        //     for (Exp exp: node.getArgs()) {
-        //         exp.accept(this);
-        //        // System.out.println("getArgs: " + exp);
-        //     }
-        //     env.push(new HashMap<>());
-        //     //HashMap<String, Object> aux = new HashMap<>();
-        //     for (int i = fun.getParams().size() - 1; i >= 0; i--) {
-        //         env.peek().put(fun.getParams().get(i).getID(), operands.pop());
-        //     }
-           
-        //     if (fun.getBody() == null) {
-        //         throw new RuntimeException("Erro: A função '" + fun.getName() + "' não tem um corpo para ser executado.");
-        //     }
-        //    // System.out.println("Body: " + fun.getBody());
-        //     fun.getBody().accept(this);
-        //   //   System.out.println("aaqui");
-        //     Object returnValue = operands.pop(); // pode ser um único objeto ou uma lista
-        //     env.pop();
-        //     returnMode = false;
-            
-        //     node.getIndex().accept(this);
-        //     int index = (Integer) operands.pop();
-        //    // System.out.println("index: " + index);
-        //     List<TType> returnTypes = fun.getType();
-        //    // System.out.println("returnTypes: " + returnTypes);
-        //     if (returnTypes != null && returnTypes.size() > 1) {
-        //         if (!(returnValue instanceof List)) {
-        //             throw new RuntimeException("Erro: Função com multiplos retornos não retornou uma lista.");
-        //         }
-        //         operands.push(((List) returnValue).get(index));
-        //         } else {
-
-        //             if (index != 0) {
-        //                 throw new RuntimeException("Erro");
-        //             }
-        //           //  System.out.println("returnValue: " + returnValue);
-        //             operands.push(returnValue);
-        //           //  System.out.println("returnValue: " + returnValue);
-        //         }       
-        // } catch (Exception e) {
-        //     e.printStackTrace();
-        //     throw new RuntimeException( " (" + node.getLine() + ", " + node.getCol() + ") " + e.getMessage() );
-        // }
     }
+
     @Override
         public void visit(Read node) {
             // if (returnMode) return;
