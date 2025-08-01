@@ -40,6 +40,10 @@ public class STyData extends SType{
     }
 
     public boolean match(SType t){
+        if (!(t instanceof STyData)) {
+            return false;
+        }
+
         // é do tipo Data e tem o mesmo nome? acho q nem dá pra ter nome diferente
         if (!(t instanceof STyData) && this.id.equals(((STyData) t).getID())) {
             return false;

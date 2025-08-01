@@ -46,6 +46,8 @@ public class TypeCheckerVisitor extends Visitor {
 
     private operandControler<SType> operands;
     private boolean hasReturnStmt;
+    private boolean leftSided;
+    private boolean isDeclarationPhase;
 
     public String getColAndLine(Node node) {
         return node.getLine() + ", " + node.getCol() + ": ";
@@ -73,6 +75,7 @@ public class TypeCheckerVisitor extends Visitor {
         log = new ArrayList<String>();
         dataDefs = new LinkedHashMap<String, STyData>();
         hasReturnStmt = false;
+        isDeclarationPhase = true;
     }
 
     private int countArrayAccesses(LValue arr) {
@@ -96,6 +99,7 @@ public class TypeCheckerVisitor extends Visitor {
 
     @Override
     public void visit(Prog node) {
+
         for (Def def : node.getDefs()) {
             def.accept(this);
         }
@@ -103,6 +107,8 @@ public class TypeCheckerVisitor extends Visitor {
         if (!envs.hasKey("main")) {
             log.add(getColAndLine(node) + "Função main não definida");
         }
+
+        isDeclarationPhase = false;
 
         for (Def def : node.getDefs()) {
             if (def instanceof Fun) {
@@ -113,7 +119,13 @@ public class TypeCheckerVisitor extends Visitor {
 
    @Override
     public void visit(Fun node) {
-        if (!envs.hasKey(node.getName())) {
+        if (isDeclarationPhase) {
+
+            if (envs.hasKey(node.getName())) {
+                log.add(getColAndLine(node) + "Redeclaração da função " + node.getName());
+                return;
+            }
+
             STyFun funType;
 
             SType[] fparams = new SType[node.getParams().size()];
@@ -175,13 +187,17 @@ public class TypeCheckerVisitor extends Visitor {
             SType right = operands.pop();
             current.put(left.getName(), right);
         } else {
+            leftSided = true;
             node.getLhs().accept(this);
+            leftSided = false;
             SType left = operands.pop();
             SType right = operands.pop();
-            int narray = countArrayAccesses(node.getLhs());
+
+            int narray = countArrayAccesses(node.getLhs()); // dimensões do array
             for (int i = 0; i < narray; i++) {
                 left = ((STyArr) left).getType();
             }
+
             if (!left.match(right)) {
                 log.add(getColAndLine(node) + "Atribuição inválida de " + left.toString() + " para "
                         + right.toString());
@@ -417,6 +433,7 @@ public class TypeCheckerVisitor extends Visitor {
         }
 
         STyData dotBaseData = (STyData) dotBase;
+
         if (!dotBaseData.hasField(node.getField())) {
             log.add(getColAndLine(node) + "Campo " + node.getField() + " não encontrado para o tipo "
                     + dotBase.toString());
@@ -424,11 +441,31 @@ public class TypeCheckerVisitor extends Visitor {
         } else {
             operands.push(dotBaseData.getFieldType(node.getField()));
         }
+
+        if (leftSided && dotBaseData.getRelatedFunctions() != null) { // é abstrato
+            String[] relatedFunctions = dotBaseData.getRelatedFunctions();
+            boolean canAccessFields = false;
+            for (int i = 0; i < relatedFunctions.length; i++) {
+                if (current.getFunctionID().equals(relatedFunctions[i])) {
+                    canAccessFields = true;
+                }
+            }
+            if (!canAccessFields) {
+                log.add(getColAndLine(node) + "Não é possível alterar o valor do campo '" + node.getField()
+                        + "' no contexto da função " + current.getFunctionID());
+            }
+        }
     }
     
     @Override
     public void visit(Data node) {
-        if (!dataDefs.containsKey(node.getName())) {
+
+        if (isDeclarationPhase) {
+            if (dataDefs.containsKey(node.getName())) {
+                log.add(getColAndLine(node) + "Redeclaração do registro " + node.getName());
+                return;
+            }
+
             LinkedHashMap<String, SType> dataFields = new LinkedHashMap<String, SType>();
             for (Decl decl : node.getDecls()) {
                 decl.accept(this);
@@ -445,6 +482,8 @@ public class TypeCheckerVisitor extends Visitor {
                 data = new STyData(node.getName(), dataFields);
             }
             dataDefs.put(node.getName(), data);
+        } else if (isDeclarationPhase) {
+            log.add("DECLAR DE TIPO");
         }
 
         if (node.getFuns().size() != 0) {
