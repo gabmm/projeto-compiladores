@@ -45,8 +45,12 @@ parser:
 
 compile: lexer parser
 	@$(call MKDIR_P,$(BIN_DIR))
-	@javac -cp "$(BEAVER_RT)$(CP_SEPARATOR)$(ST_JAR)$(CP_SEPARATOR)$(ANTLR_JAR)$(CP_SEPARATOR)." -d $(BIN_DIR) $(JAVA_SOURCES)
-
+ifeq ($(OS),Windows_NT)
+	@xcopy $(subst /,\,$(SRC_DIR)) $(subst /,\,$(BIN_DIR)) /S /I /Y /Q > nul
+else
+	@rsync -a --delete $(SRC_DIR)/ $(BIN_DIR)/
+endif
+	@javac -cp "$(BEAVER_RT)$(CP_SEPARATOR)$(ST_JAR)$(CP_SEPARATOR)$(ANTLR_JAR)" -d $(BIN_DIR) $(JAVA_SOURCES)
 
 
 
