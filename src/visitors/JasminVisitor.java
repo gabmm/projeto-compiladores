@@ -31,9 +31,6 @@ public class JasminVisitor extends Visitor {
     public void visit(Neq node){}
 
     @Override
-    public void visit(Or node){}
-
-    @Override
     public void visit(And node){}
 
     @Override
@@ -41,9 +38,6 @@ public class JasminVisitor extends Visitor {
 
     @Override
     public void visit(Var node){}
-
-    @Override
-    public void visit(Attr node){}
 
     @Override
     public void visit(Fun node){}
@@ -98,9 +92,6 @@ public class JasminVisitor extends Visitor {
 
     @Override
     public void visit (ArrayAccess node){}
-
-    @Override
-    public void visit (FieldAccess node){}
 
     @Override
     public void visit (Call node){}

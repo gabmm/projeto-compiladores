@@ -132,8 +132,6 @@ public class DotVisitor extends Visitor {
         nodes.push(neq);
     }
 
-    public void visit(Or e){} //nem existe or
-
     public void visit(And e){
         System.out.println("Debugger: AND");
         String and = createNode("&&");
@@ -155,8 +153,6 @@ public class DotVisitor extends Visitor {
         System.out.println("Debugger: VAR");
         nodes.push(createNode(e.toString())); 
     }
-
-    public void visit(Attr e){} //nem existe ATTR
 
     public void visit(Fun e){
         System.out.println("Debugger: FUN");
@@ -314,8 +310,6 @@ public class DotVisitor extends Visitor {
         createEdge(arrayAccess, nodes.pop());
         nodes.push(arrayAccess);
     }
-
-    public void visit (FieldAccess e){} //nem existe
 
     public void visit (Call e){
         System.out.println("Debugger: CALL");

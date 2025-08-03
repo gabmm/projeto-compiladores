@@ -283,18 +283,6 @@ public class InterpretVisitor extends Visitor {
     }
 
     @Override
-    public void visit(Or node) {
-        node.getLeft().accept(this);
-        boolean left = (Boolean) operands.pop();
-        if (left) { 
-            operands.push(true);
-            return;
-        }
-        node.getRight().accept(this);
-        operands.push(operands.pop());
-    }
-
-    @Override
     public void visit(Eq node) {
         node.getLeft().accept(this);
         node.getRight().accept(this);
@@ -439,17 +427,6 @@ public class InterpretVisitor extends Visitor {
     public void visit(ItCondId node) {
         node.getCond().accept(this);
      }
-
-    @Override
-    public void visit(Attr node) { // acho que não precisa dessa, seria igual o assign 
-        
-    }
-    @Override 
-     public void visit(FieldAccess node) { // acho que não precisa dessa, seria mesma coisa que o DOT
-        node.getTarget().accept(this);
-        HashMap<String, Object> ob = ( HashMap<String, Object>) operands.pop();
-        operands.push(ob.get(node.getField()));
-    }
 
     @Override
     public void visit(Sub node) {

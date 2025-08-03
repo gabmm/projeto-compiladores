@@ -17,15 +17,11 @@ public abstract class Visitor { //deve ter um método abstrato de visit para cad
     public abstract void visit(Div e);
     public abstract void visit(Sub e);
     public abstract void visit(Add e);
-
     public abstract void visit(Eq e);
     public abstract void visit(Neq e);
-    public abstract void visit(Or e);
     public abstract void visit(And e);
     public abstract void visit(Neg e);
-
     public abstract void visit(Var e);
-    public abstract void visit(Attr e);
     public abstract void visit(Fun e);
     public abstract void visit(NBool e);
     public abstract void visit(NChar e);
@@ -44,7 +40,6 @@ public abstract class Visitor { //deve ter um método abstrato de visit para cad
     public abstract void visit (Return e);
     public abstract void visit (Assign e);
     public abstract void visit (ArrayAccess e);
-    public abstract void visit (FieldAccess e);
     public abstract void visit (Call e);
     public abstract void visit (CallStmt e);
     public abstract void visit (Null e);

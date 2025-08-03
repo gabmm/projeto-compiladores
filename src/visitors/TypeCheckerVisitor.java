@@ -348,19 +348,12 @@ public class TypeCheckerVisitor extends Visitor {
         node.getLeft().accept(this);
         checkArithmeticBinOp(node, "ADD");
     }
-
     @Override
-    public void visit(And node) {
-        node.getRight().accept(this);
-        node.getLeft().accept(this);
-        checkBooleanBinOp(node, "AND");
-    }
-
-    @Override
-    public void visit(Or node) {
-        // não há OR nessa linguagem
-    }
-
+        public void visit(And node) {
+            node.getRight().accept(this);
+            node.getLeft().accept(this);
+            checkBooleanBinOp(node, "AND");
+        }
     @Override
     public void visit(Eq node) {
         node.getRight().accept(this);
@@ -548,15 +541,6 @@ public class TypeCheckerVisitor extends Visitor {
      }
 
     @Override
-    public void visit(Attr node) {
-        // Não há Attr nessa linguagem, o correto é Assign
-    }
-    @Override 
-    public void visit(FieldAccess node) {
-        // Não há FieldAccess nessa linguagem, o correto é Dot
-    }
-
-    @Override
     public void visit(Sub node) {
         node.getRight().accept(this);
         node.getLeft().accept(this);
@@ -598,7 +582,7 @@ public class TypeCheckerVisitor extends Visitor {
         if (expType.match(tyBool)) {
             operands.push(tyBool);
         } else {
-            log.add(getColAndLine(node) + "Operação NOT não permitida para o tipo: " + expType.toString());
+            log.add(getColAndLine(node) + "Operacao NOT não permitida para o tipo: " + expType.toString());
             operands.push(tyError);
         }
     }
@@ -612,7 +596,7 @@ public class TypeCheckerVisitor extends Visitor {
         } else if (expType.match(tyFloat)) {
             operands.push(tyFloat);
         } else {
-            log.add(getColAndLine(node) + "Operação NEG não permitida para o tipo: " + expType.toString());
+            log.add(getColAndLine(node) + "Operacao NEG nao permitida para o tipo: " + expType.toString());
             operands.push(tyError);
         }
     }
@@ -628,7 +612,7 @@ public class TypeCheckerVisitor extends Visitor {
         node.getExpr().accept(this);
         SType expType = operands.pop();
         if (!(expType.match(tyInt) || expType.match(tyFloat) || expType.match(tyChar) || expType.match(tyBool))) {
-            log.add(getColAndLine(node) + "Operação NEG não permitida para o tipo: " + expType.toString());
+            log.add(getColAndLine(node) + "Operacao NEG nao permitida para o tipo: " + expType.toString());
         }
     }
 
@@ -663,14 +647,14 @@ public class TypeCheckerVisitor extends Visitor {
         SType[] retTypes = funType.getReturns();
 
         if (retTypes.length == 0) {
-            log.add(getColAndLine(node) + "Função " + node.getFuncName() + " não possui retornos");
+            log.add(getColAndLine(node) + "Funcao " + node.getFuncName() + " nao possui retornos");
             operands.push(tyError);
             return;
         }
 
         if (funType.getParams().length != node.getArgs().size()) {
-            log.add(getColAndLine(node) + "Número de argumentos (" + node.getArgs().size()
-                    + ") incompatível com a chamada da função " + node.getFuncName() + ". Número esperado: "
+            log.add(getColAndLine(node) + "Numero de argumentos (" + node.getArgs().size()
+                    + ") incompativel com a chamada da funcao " + node.getFuncName() + ". Numero esperado: "
                     + funType.getParams().length);
         } else {
             for (int i = 0; i < node.getArgs().size(); i++) {
@@ -679,7 +663,7 @@ public class TypeCheckerVisitor extends Visitor {
                 SType param = funType.getParams()[i];
                 if (!arg.match(param)) {
                     log.add(getColAndLine(node) + "Tipo do argumento " + i + " " + arg.toString()
-                            + " incompatível com a função " + node.getFuncName() + ". Tipo esperado: "
+                            + " incompativel com a função " + node.getFuncName() + ". Tipo esperado: "
                             + param.toString());
                 }
             }
@@ -688,13 +672,13 @@ public class TypeCheckerVisitor extends Visitor {
         node.getIndex().accept(this);
         SType ret = operands.pop();
         if (!ret.match(tyInt)) {
-            log.add(getColAndLine(node) + "Tipo do índice do retorno da chamada da função " + node.getFuncName() + " é "
+            log.add(getColAndLine(node) + "Tipo do indice do retorno da chamada da funcao " + node.getFuncName() + " é "
                     + ret.toString() + ". Esperado: " + tyInt.toString());
             operands.push(tyError);
         } else {
             if (!(node.getIndex() instanceof NInt)) {
-                log.add(getColAndLine(node) + "Índice do retorno da chamada da função " + node.getFuncName()
-                        + " não é um literal inteiro!");
+                log.add(getColAndLine(node) + "indice do retorno da chamada da funcao " + node.getFuncName()
+                        + " nao e um literal inteiro!");
                 operands.push(tyError);
             } else {
                 operands.push(retTypes[((NInt) node.getIndex()).getValue()]);
