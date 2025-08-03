@@ -49,6 +49,20 @@ public class JavaVisitor extends Visitor {
         }
     }
 
+    private void visitBinaryExpr(String templateName, Exp left, Exp right) { // add, sub, mul, mod, lt, eq ...
+        right.accept(this);
+        ST right_expr = this.exp;
+
+        left.accept(this);
+        ST left_expr = this.exp;
+
+        ST final_expr = groupTemplate.getInstanceOf(templateName);
+        final_expr.add("left_expr", left_expr);
+        final_expr.add("right_expr", right_expr);
+
+        this.exp = final_expr;
+    }
+
     @Override
     public void visit(Prog node){
         ST prog = groupTemplate.getInstanceOf("program");
@@ -67,41 +81,51 @@ public class JavaVisitor extends Visitor {
     }
 
     @Override
-    public void visit(Mul node){}
+    public void visit(Mul node){
+        visitBinaryExpr("mul_expr", node.getLeft(), node.getRight());
+    }
 
     @Override
-    public void visit(Div node){}
+    public void visit(Div node){
+        visitBinaryExpr("div_expr", node.getLeft(), node.getRight());
+    }
 
     @Override
-    public void visit(Sub node){}
+    public void visit(Sub node){
+        visitBinaryExpr("sub_expr", node.getLeft(), node.getRight());
+    }
 
     @Override
-    public void visit(Add node){}
+    public void visit(Add node){
+        visitBinaryExpr("add_expr", node.getLeft(), node.getRight());
+    }
 
     @Override
-    public void visit(Eq node){}
+    public void visit(Eq node){
+        visitBinaryExpr("equals_expr", node.getLeft(), node.getRight());
+    }
 
     @Override
-    public void visit(Neq node){}
+    public void visit(Neq node){
+        
+    }
 
     @Override
-    public void visit(Or node){}
+    public void visit(And node){
+        visitBinaryExpr("and_expr", node.getLeft(), node.getRight());
+    }
 
     @Override
-    public void visit(And node){}
-
-    @Override
-    public void visit(Neg node){}
+    public void visit(Neg node){
+        
+    }
 
     @Override
     public void visit(Var node){
         ST var = groupTemplate.getInstanceOf("var");
-        var.add("name", node.getName()); //Pq ta saindo Var(var)??
-        exp = var;
+        var.add("name", node.getName());
+        this.exp = var;
     }
-
-    @Override
-    public void visit(Attr node){}
 
     @Override
     public void visit(Fun node){
@@ -140,7 +164,7 @@ public class JavaVisitor extends Visitor {
 
         if(((STyFun)local.getType()).getReturns().length > 0){
             fun.add("ret_type", "ArrayList<Object>");
-            fun.add("ret_aux", "ArrayList<Object> _returns = new ArrayList<Object>;");
+            fun.add("ret_aux", "ArrayList<Object> _returns = new ArrayList<Object>();");
         } else {
             fun.add("ret_type", "void");
         }
@@ -152,16 +176,30 @@ public class JavaVisitor extends Visitor {
     }
 
     @Override
-    public void visit(NBool node){}
+    public void visit(NBool node){
+        ST literal = groupTemplate.getInstanceOf("boolean_expr");
+        literal.add("value", node.getValue());
+        this.exp = literal;
+    }
 
     @Override
-    public void visit(NChar node){}
+    public void visit(NChar node){
+        this.exp = groupTemplate.getInstanceOf("var").add("name", "'" + node.getValue() + "'");
+    }
 
     @Override
-    public void visit(NFloat node){}
+    public void visit(NFloat node){
+        ST literal = groupTemplate.getInstanceOf("float_expr");
+        literal.add("value", node.getValue() + "f");
+        this.exp = literal;
+    }
 
     @Override
-    public void visit(NInt node){}
+    public void visit(NInt node){
+        ST literal = groupTemplate.getInstanceOf("int_expr");
+        literal.add("value", node.getValue());
+        this.exp = literal;
+    }
 
     @Override
     public void visit(NNot node){}
@@ -176,10 +214,35 @@ public class JavaVisitor extends Visitor {
     }
 
     @Override
-    public void visit(Print node){}
-
+    public void visit(Print node){
+        node.getExpr().accept(this); 
+        ST print_cmd = groupTemplate.getInstanceOf("print_stmt");
+        print_cmd.add("expr", this.exp);
+        this.cmd = print_cmd;
+    }
+       
     @Override
-    public void visit(If node){}
+    public void visit(If node){
+        node.getCondition().accept(this); 
+        ST condition = this.exp;
+
+        node.getThenCmd().accept(this);
+        ST then_cmd = this.cmd;
+
+        ST else_cmd = null;
+        if(node.getElseCmd() != null){
+            node.getElseCmd().accept(this);
+            else_cmd = this.cmd;
+        }
+
+        ST if_cmd = groupTemplate.getInstanceOf("if");
+        if_cmd.add("expr", condition);
+        if_cmd.add("thn", then_cmd);
+        if(else_cmd != null){
+            if_cmd.add("els", else_cmd);
+        }
+        this.cmd = if_cmd;
+    }
 
     @Override
     public void visit(Block node){
@@ -201,10 +264,23 @@ public class JavaVisitor extends Visitor {
     public void visit (ItCond node){}
 
     @Override
-    public void visit (ItCondExp node){}
+    public void visit (ItCondExp node){
+        node.getCond().accept(this);
+    }
 
     @Override
-    public void visit (Iterate node){}
+    public void visit (Iterate node){
+        node.getCondition().accept(this); 
+        ST condition = this.exp;
+        
+        node.getBody().accept(this); 
+        ST body = this.cmd; 
+        
+        ST while_cmd = groupTemplate.getInstanceOf("while");
+        while_cmd.add("expr", condition);
+        while_cmd.add("stmt", body);
+        this.cmd = while_cmd;
+    }
 
     @Override
     public void visit (Return node){
@@ -214,7 +290,7 @@ public class JavaVisitor extends Visitor {
 
             exp.accept(this);
             retExp = groupTemplate.getInstanceOf("return_exp");
-            retExp.add("expr", exp);
+            retExp.add("expr", this.exp);
             retExps.add(retExp);
         }
         ST retCmd = groupTemplate.getInstanceOf("return");
@@ -224,17 +300,36 @@ public class JavaVisitor extends Visitor {
 
     @Override
     public void visit (Assign node){
-        //por enquanto Lvalue é somente VAR
+        node.getRhs().accept(this);
+        ST rhs = this.exp;
+
+        node.getLhs().accept(this); 
+        ST lhs = this.exp;
+
+        ST assign_cmd = groupTemplate.getInstanceOf("assign_stmt");
+        assign_cmd.add("lhs", lhs);
+        assign_cmd.add("rhs", rhs);
+        this.cmd = assign_cmd;
     }
 
     @Override
     public void visit (ArrayAccess node){}
 
     @Override
-    public void visit (FieldAccess node){}
+    public void visit (Call node){
+        ST call_expr = groupTemplate.getInstanceOf("call");
+        call_expr.add("name", node.getFuncName());
+        ArrayList<ST> args = new ArrayList<>();
+        if(node.getArgs() != null){
+            for(Exp arg_exp : node.getArgs()){
+                arg_exp.accept(this); 
+                args.add(this.exp);
+            }
+        }
+        call_expr.add("args", args);
 
-    @Override
-    public void visit (Call node){}
+        this.exp = call_expr;
+    }
 
     @Override
     public void visit (CallStmt node){}
@@ -243,7 +338,25 @@ public class JavaVisitor extends Visitor {
     public void visit (Null node){}
 
     @Override
-    public void visit (New node){}
+    public void visit (New node){
+        node.getType().accept(this);
+        ST type_st = this.type;
+        if (node.getDimensions() != null && !node.getDimensions().isEmpty()) {
+            // É um array: new Int[10]
+            // Visita a expressão do tamanho do array
+            node.getDimensions().get(0).accept(this);
+            ST size_st = this.exp;
+
+            ST new_array = groupTemplate.getInstanceOf("new_array_expr");
+            new_array.add("type", type_st);
+            new_array.add("size", size_st);
+            this.exp = new_array;
+        } else {
+            ST new_obj = groupTemplate.getInstanceOf("new_obj_expr");
+            new_obj.add("type", type_st);
+            this.exp = new_obj;
+        }
+    }
 
     @Override
     public void visit (CmdList node){}
@@ -252,7 +365,21 @@ public class JavaVisitor extends Visitor {
     public void visit (Decl node){}
 
     @Override
-    public void visit (Data node){}
+    public void visit (Data node){
+        ST data_def = groupTemplate.getInstanceOf("data_def");
+        data_def.add("name", node.getName());
+        
+        ArrayList<ST> fields = new ArrayList<>();
+        for(Decl d : node.getDecls()) {
+             d.getType().accept(this); 
+             ST field = groupTemplate.getInstanceOf("field_def");
+             field.add("type", this.type);
+             field.add("name", d.getName());
+             fields.add(field);
+        }
+        data_def.add("fields", fields);
+        datas.add(data_def);
+    }
 
     @Override
     public void visit (ExpList node){}
@@ -293,13 +420,28 @@ public class JavaVisitor extends Visitor {
     }
 
     @Override
-    public void visit(Lt node){}
+    public void visit(Lt node){
+        visitBinaryExpr("lt_expr",  node.getLeft(), node.getRight());
+    }
 
     @Override
-    public void visit(Mod node){}
+    public void visit(Mod node){
+        visitBinaryExpr("mod_expr", node.getLeft(), node.getRight());
+    }
 
     @Override
-    public void visit(Dot node){}
+    public void visit(Dot node){
+        node.getBase().accept(this);
+        ST base_expr = this.exp;
+
+        String field_name = node.getField();
+        ST dot_expr = groupTemplate.getInstanceOf("dot_expr");
+
+        dot_expr.add("base", base_expr);
+        dot_expr.add("field", field_name);
+  
+        this.exp = dot_expr;
+    }
 
     @Override
     public void visit(Read node){}

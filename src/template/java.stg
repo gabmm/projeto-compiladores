@@ -42,7 +42,7 @@ boolean_type() ::= "boolean"
 char_type() ::= "char"
 data_type(data_id) ::= "<data_id>"
 
-print_stmt(expr) ::= "System.out.println(<expr>);"
+print_stmt(expr) ::= "System.out.println(<expr>)"
 
 return_exp(expr) ::= "_returns.add(<expr>);"
 
@@ -72,7 +72,7 @@ block(commands) ::= <<
 
 declare_assign_stmt(type, lhs, rhs) ::= "<type> <lhs> = <rhs>;"
 
-assign_stmt(lhs, rhs) ::= "<lhs> = <rhs>;"
+assign_stmt(lhs, rhs) ::= "<lhs> = <rhs>"
 
 
 lvalue(name, array) ::= "<name><array>"
@@ -91,9 +91,13 @@ div_expr(left_expr, right_expr) ::= "(<left_expr> / <right_expr>)"
 mod_expr(left_expr, right_expr) ::= "(<left_expr> % <right_expr>)"
 add_expr(left_expr, right_expr) ::= "(<left_expr> + <right_expr>)"
 sub_expr(left_expr, right_expr) ::= "(<left_expr> - <right_expr>)"
-
+dot_expr(base, field) ::= "<base>.<field>"
 lt_expr(left_expr, right_expr) ::= "(<left_expr> \< <right_expr>)"
 equals_expr(left_expr, right_expr) ::= "(<left_expr> == <right_expr>)"
 and_expr(left_expr, right_expr) ::= "(<left_expr> && <right_expr>)"
 not_expr(expr) ::= "!<expr>"
 neg_expr(expr) ::= "((-1)*(<expr>))"
+
+new_obj_expr(type) ::= "new <type>()"
+new_array_expr(type, size) ::= "new <type>[<size>]"
+call_stmt(call_expr) ::= "<call_expr>;"
