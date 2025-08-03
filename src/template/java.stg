@@ -1,0 +1,99 @@
+group java;
+
+program(data_defs, fun_defs) ::= <<
+
+<data_defs; separator="\n\n">
+
+public class ProgramaLang {
+    <fun_defs; separator="\n\n">
+  
+    public static void main(String args[]) {
+        _main();
+    }
+}
+>>
+
+fun_def(name, params, env_vars, body, ret_type, ret_aux) ::= <<
+public static <ret_type> <name>(<params; separator=", ">) {
+    <if(env_vars)><env_vars; separator=";\n">;<endif>
+    <ret_aux>
+    <if(body)><body; separator=";\n"><endif>
+}
+>>
+
+data_def(name, fields, funs) ::= <<
+    public class <name> {
+        <fields; separator="\n">
+        \n
+        <if(funs)><funs; separator="\n\n"><endif>
+    }
+>>
+
+field_def(type, name) ::= "        public <type> <name>;"
+
+param_def(type, name) ::= "<type> <name>"
+var_inst(type, name) ::= "<type> <name>"
+var(name) ::= "<name>"
+
+array_type(type) ::= "<type>[]"
+int_type() ::= "int"
+float_type() ::= "float"
+boolean_type() ::= "boolean"
+char_type() ::= "char"
+data_type(data_id) ::= "<data_id>"
+
+print_stmt(expr) ::= "System.out.println(<expr>);"
+
+return_exp(expr) ::= "_returns.add(<expr>);"
+
+return(return_exps) ::= <<
+<return_exps; separator="\n">
+return _returns;
+>>
+
+while(expr, stmt) ::= <<
+while(<expr>) {
+    <stmt>
+}
+>>
+
+if(expr, thn, els) ::= <<
+if(<expr>) {
+    <thn>
+} <if(els)>else {
+    <els>
+}
+<endif>
+>>
+
+block(commands) ::= <<
+<commands; separator="\n">
+>>
+
+declare_assign_stmt(type, lhs, rhs) ::= "<type> <lhs> = <rhs>;"
+
+assign_stmt(lhs, rhs) ::= "<lhs> = <rhs>;"
+
+
+lvalue(name, array) ::= "<name><array>"
+array_access(expr) ::= "[<expr>]"
+
+boolean_expr(value) ::= "<value>"
+float_expr(value) ::= "<value>"
+int_expr(value) ::= "<value>"
+
+new_array(var, type, expr) ::= "<var> = new <type>[<expr>];"
+
+call(name, args) ::= <<<name>(<args; separator=", ">)>>
+
+mul_expr(left_expr, right_expr) ::= "(<left_expr> * <right_expr>)"
+div_expr(left_expr, right_expr) ::= "(<left_expr> / <right_expr>)"
+mod_expr(left_expr, right_expr) ::= "(<left_expr> % <right_expr>)"
+add_expr(left_expr, right_expr) ::= "(<left_expr> + <right_expr>)"
+sub_expr(left_expr, right_expr) ::= "(<left_expr> - <right_expr>)"
+
+lt_expr(left_expr, right_expr) ::= "(<left_expr> \< <right_expr>)"
+equals_expr(left_expr, right_expr) ::= "(<left_expr> == <right_expr>)"
+and_expr(left_expr, right_expr) ::= "(<left_expr> && <right_expr>)"
+not_expr(expr) ::= "!<expr>"
+neg_expr(expr) ::= "((-1)*(<expr>))"

@@ -49,6 +49,10 @@ public class TypeCheckerVisitor extends Visitor {
     private boolean leftSided;
     private boolean isDeclarationPhase;
 
+    public TyEnv<LocalEnv<SType>> getEnvs() {
+        return this.envs;
+    }
+
     public String getColAndLine(Node node) {
         return node.getLine() + ", " + node.getCol() + ": ";
     }

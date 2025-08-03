@@ -52,7 +52,7 @@ public class Main {
                     programNode.accept(dot);
                     dot.saveToFile("ast.dot");
                     break;
-                case "-tc":
+                case "-t":
                     TypeCheckerVisitor typeChecker = new TypeCheckerVisitor();
                     programNode.accept(typeChecker);
                     typeChecker.printEnvs();
@@ -60,6 +60,16 @@ public class Main {
                     typeChecker.printData();
                     System.out.println("-----\n");
                     typeChecker.printErrors();
+                    break;
+                case "-src":
+                    TypeCheckerVisitor tc = new TypeCheckerVisitor();
+                    programNode.accept(tc);
+                    JavaVisitor jv = new JavaVisitor(tc.getEnvs());
+                    programNode.accept(jv);
+                    jv.printProg();
+                    break;
+                case "-gen":
+                    // nao faz mais nada, a analise ja foi feita.
                     break;
                 default:
                     System.err.println("Diretiva desconhecida: " + directive);

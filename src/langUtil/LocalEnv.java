@@ -42,15 +42,22 @@ public class LocalEnv<A> extends TyEnv<A>{
         for (Map.Entry<String, A> entry : super.getEnv().entrySet()) {
             if (!(entry.getValue() instanceof LocalEnv)) {
                 if (entry.getValue() instanceof STyData) {
-                    env += "[ ID: " + entry.getKey() + " TYPE: " + ((STyData) entry.getValue()).getID() + " ]\n";
-                } else {
-                    env += "[ ID: " + entry.getKey() + " TYPE: " + entry.getValue().toString() + " ]\n";
-                }
+            env += "[ ID: " + entry.getKey() + " TYPE: " + ((STyData) entry.getValue()).getID() + " ]\n";
+        } else {
+            env += "[ ID: " + entry.getKey() + " TYPE: " + entry.getValue().toString() + " ]\n";
+        }
 
-            }
+    }
         }
         // env += super.toString() + "\n";
         return env;
+
+        // String map = this.id + ": \n";
+        // for (Map.Entry<String, A> entry : super.getEnv().entrySet()) {
+        // map += entry.getKey() + " -> " + entry.getValue() + "\n";
+        // }
+        // map += "\n\n";
+        // return map;
     }
 
     public void printFunctionEnv(){

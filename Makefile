@@ -15,6 +15,8 @@ endif
 JFLEX_JAR  = lib/jflex/jflex-full-1.8.2.jar
 BEAVER_JAR = lib/beaver/beaver-cc-0.9.11.jar
 BEAVER_RT  = lib/beaver/beaver-rt-0.9.11.jar
+ST_JAR     = lib/string_template/ST-4.3.1.jar
+ANTLR_JAR  = lib/string_template/antlr-3.5.2-runtime.jar
 SRC_DIR    = src
 BIN_DIR    = bin
 
@@ -43,7 +45,7 @@ parser:
 
 compile: lexer parser
 	@$(call MKDIR_P,$(BIN_DIR))
-	@javac -cp "$(BEAVER_RT)$(CP_SEPARATOR)." -d $(BIN_DIR) $(JAVA_SOURCES)
+	@javac -cp "$(BEAVER_RT)$(CP_SEPARATOR)$(ST_JAR)$(CP_SEPARATOR)$(ANTLR_JAR)$(CP_SEPARATOR)." -d $(BIN_DIR) $(JAVA_SOURCES)
 
 
 
@@ -87,7 +89,7 @@ test-interp: compile
 
 run: compile
 	@echo "--- Executando Compilador (Acao: $(ACTION), Arquivo: $(FILE)) ---"
-	@java -cp "$(BIN_DIR)$(CP_SEPARATOR)$(BEAVER_RT)" $(MAIN_CLASS) $(ACTION) $(FILE)
+	@java -cp "$(BIN_DIR)$(CP_SEPARATOR)$(BEAVER_RT)$(CP_SEPARATOR)$(ST_JAR)$(CP_SEPARATOR)$(ANTLR_JAR)" $(MAIN_CLASS) $(ACTION) $(FILE)
 ifeq ($(ACTION),-dot)
 	@echo "--- Gerando imagem da AST ---"
 	@dot -Tpng ast.dot -o ast.png || echo "Erro ao gerar imagem com dot."
