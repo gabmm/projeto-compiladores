@@ -161,7 +161,8 @@ public class TypeCheckerVisitor extends Visitor {
             current.put(p.getID(), operands.pop());
         }
         node.getBody().accept(this);
-        if (!hasReturnStmt && !node.getName().equals("main")) {
+        // if (!hasReturnStmt && !node.getName().equals("main")) {
+        if (!hasReturnStmt && node.getType().size() > 0) {
             log.add(getColAndLine(node) + "Função " + node.getName() + " não possui comando de retorno");
         }
     }
