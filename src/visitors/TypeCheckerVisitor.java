@@ -19,6 +19,10 @@ import java.util.List;
 import java.util.Stack;
 import java.util.Scanner;
 
+/*
+ * Verificar como null deve se comportar
+ */
+
 public class TypeCheckerVisitor extends Visitor {
 
 
@@ -30,6 +34,7 @@ public class TypeCheckerVisitor extends Visitor {
     private STyChar tyChar = STyChar.initSTyChar();
     private STyBool tyBool = STyBool.initSTyBool();
     private STyError tyError = STyError.iniSTyError();
+    private STyNull tyNull = STyNull.initSTyNull();
 
     private ArrayList<String> log;
 
@@ -180,16 +185,20 @@ public class TypeCheckerVisitor extends Visitor {
     public void visit(Assign node) {
         node.getRhs().accept(this);
 
-        /*
-         * Se entra no IF, é atribuição para variável simples logo pode ser feita de
-         * qualquer forma. Se entra no ELSE, então é array ou data Nesse caso a
-         * atribuição deve ser do mesmo tipo
-         */
-
         if (node.getLhs() instanceof Var) {
-            Var left = (Var) node.getLhs();
+            Var localVar = (Var) node.getLhs();
             SType right = operands.pop();
-            current.put(left.getName(), right);
+            if (current.hasKey(localVar.getName())) {
+                SType left = current.get(localVar.getName());
+                if (!left.match(right)) {
+                    log.add(getColAndLine(node) + "Atribuição inválida: não é possível converter " + left.toString()
+                            + " para " + right.toString());
+                } else if (right instanceof STyNull && (left instanceof STyData || left instanceof STyArr)) {
+                    current.put(localVar.getName(), right);
+                }
+            } else {
+                current.put(localVar.getName(), right);
+            }
         } else {
             leftSided = true;
             node.getLhs().accept(this);
@@ -197,13 +206,14 @@ public class TypeCheckerVisitor extends Visitor {
             SType left = operands.pop();
             SType right = operands.pop();
 
-            int narray = countArrayAccesses(node.getLhs()); // dimensões do array
-            for (int i = 0; i < narray; i++) {
-                left = ((STyArr) left).getType();
-            }
+            // int narray = countArrayAccesses(node.getLhs()); // dimensões do array
+            // for (int i = 0; i < narray; i++) {
+            // left = ((STyArr) left).getType();
+            // }
 
             if (!left.match(right)) {
-                log.add(getColAndLine(node) + "Atribuição inválida de " + left.toString() + " para "
+                log.add(getColAndLine(node) + "Atribuição inválida: não é possível converter " + left.toString()
+                        + " para "
                         + right.toString());
             }
         }
@@ -215,7 +225,7 @@ public class TypeCheckerVisitor extends Visitor {
 
         if (expectedReturns.length != node.getExps().size()) {
             log.add(getColAndLine(node) + "Quantidade de retornos (" + node.getExps().size()
-                    + ") encontrados para a função " + current.getFunctionID() + " incompatível. Esperado: "
+                    + ") encontrados para a função " + current.getFunctionID() + " é incompatível. Esperado: "
                     + expectedReturns.length);
         } else {
             for (int i = 0; i < expectedReturns.length; i++) {
@@ -223,7 +233,7 @@ public class TypeCheckerVisitor extends Visitor {
                 SType rType = operands.pop();
                 if (!rType.match(expectedReturns[i])) {
                     log.add(getColAndLine(node) + "Retorno (" + i + ") da função " + current.getFunctionID()
-                            + " incompatível. Tipo tentado: " + rType.toString() + " Esperado: "
+                            + " é incompatível. Tipo tentado: " + rType.toString() + " Esperado: "
                             + expectedReturns[i].toString());
                 }
             }
@@ -301,10 +311,10 @@ public class TypeCheckerVisitor extends Visitor {
                 } else {
                     ret.accept(this);
                     SType retType = operands.pop();
-                    int narray = countArrayAccesses(ret);
-                    for (int j = 0; j < narray; j++) {
-                        retType = ((STyArr) retType).getType();
-                    }
+                    // int narray = countArrayAccesses(ret);
+                    // for (int j = 0; j < narray; j++) {
+                    // retType = ((STyArr) retType).getType();
+                    // }
                     if (!retType.match(funRet)) {
                         log.add(getColAndLine(node) + "Tentativa de retornar (" + i + ") " + funRet.toString()
                                 + " para variável do tipo " + retType.toString() + " durante chamada da função "
@@ -326,6 +336,7 @@ public class TypeCheckerVisitor extends Visitor {
         } else {
             log.add(getColAndLine(node) + "Operação " + op + " não permitida para os tipos: " + leftExp.toString()
                     + " e " + rightExp.toString());
+            operands.push(tyError);
         }
     }
 
@@ -333,7 +344,7 @@ public class TypeCheckerVisitor extends Visitor {
         SType leftExp = operands.pop();
         SType rightExp = operands.pop();
 
-        if (leftExp.match(rightExp) && (leftExp.match(tyInt) || leftExp.match(tyFloat) || leftExp.match(tyChar))) {
+        if (leftExp.match(tyBool) && rightExp.match(tyBool)) {
             operands.push(tyBool);
         } else {
             operands.push(tyError);
@@ -372,7 +383,8 @@ public class TypeCheckerVisitor extends Visitor {
     public void visit(Var node) {
         SType varType = current.get(node.getName());
         if (varType == null) {
-            log.add(getColAndLine(node) + "Variável " + node.getName() + "não declarada");
+            log.add(getColAndLine(node) + "Variável '" + node.getName() + "' não declarada");
+            operands.push(tyError);
         } else {
             operands.push(varType);
         }
@@ -400,23 +412,44 @@ public class TypeCheckerVisitor extends Visitor {
 
     @Override
     public void visit(Null node) {
-        // operands.push(null); 
+        operands.push(tyNull);
     }
 
     @Override
     public void visit(New node) {
-        node.getType().accept(this);
+        if (node.getDimensions().size() > 1) {
+            TType bType = node.getType();
+            for (int i = 0; i < node.getDimensions().size() - 1; i++) {
+                TTypeArray aType = new TTypeArray(bType);
+                bType = aType;
+            }
+            bType.accept(this);
+        } else {
+            node.getType().accept(this);
+        }
     }
 
     @Override
     public void visit(ArrayAccess node) {
+        node.getArray().accept(this);
+        SType arrayType = operands.pop();
+
+        if (!(arrayType instanceof STyArr)) {
+            log.add(getColAndLine(node) + "Tentativa de acesso de arranjo em tipo: " + arrayType.toString());
+            operands.push(tyError);
+            return;
+        }
+
         node.getIndex().accept(this);
         SType index = operands.pop();
         if (!index.match(tyInt)) {
-            log.add(getColAndLine(node) + "Tentativa de acessar array com tipo " + index.toString()
+            log.add(getColAndLine(node) + "Tentativa de acessar arranjo com índice de tipo " + index.toString()
                     + ". Espera-se INT");
         }
-        node.getArray().accept(this);
+
+        SType baseType = ((STyArr) arrayType).getType();
+
+        operands.push(baseType);
     }
 
     @Override
@@ -427,6 +460,9 @@ public class TypeCheckerVisitor extends Visitor {
 
         if (dotBase instanceof STyArr) {
             dotBase = ((STyArr) dotBase).getType();
+        } else if (dotBase instanceof STyError) {
+            operands.push(tyError);
+            return;
         }
 
         STyData dotBaseData = (STyData) dotBase;
@@ -612,7 +648,7 @@ public class TypeCheckerVisitor extends Visitor {
         node.getExpr().accept(this);
         SType expType = operands.pop();
         if (!(expType.match(tyInt) || expType.match(tyFloat) || expType.match(tyChar) || expType.match(tyBool))) {
-            log.add(getColAndLine(node) + "Operacao NEG nao permitida para o tipo: " + expType.toString());
+            log.add(getColAndLine(node) + "Comando PRINT nao permitido para o tipo: " + expType.toString());
         }
     }
 
@@ -728,7 +764,11 @@ public class TypeCheckerVisitor extends Visitor {
             if (dataDefs.containsKey(node.getName())) {
                 operands.push(dataDefs.get(node.getName()));
             } else {
-                System.err.println("ERRO - DATA NAO DECLARADA!");
+                String err = getColAndLine(node) + "Registro '" + node.getName() + "' não declarado";
+                if (!log.contains(err)) {
+                    log.add(err);
+                }
+                operands.push(tyError);
             }
         }
 

@@ -40,6 +40,10 @@ public class STyData extends SType{
     }
 
     public boolean match(SType t){
+        if (t instanceof STyNull) {
+            return true;
+        }
+
         if (!(t instanceof STyData)) {
             return false;
         }

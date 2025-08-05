@@ -64,12 +64,13 @@ public class Main {
                 case "-src":
                     TypeCheckerVisitor tc = new TypeCheckerVisitor();
                     programNode.accept(tc);
+                    tc.printErrors();
                     JavaVisitor jv = new JavaVisitor(tc.getEnvs());
                     programNode.accept(jv);
                     jv.printProg();
                     break;
                 case "-gen":
-                    // nao faz mais nada, a analise ja foi feita.
+
                     break;
                 default:
                     System.err.println("Diretiva desconhecida: " + directive);
