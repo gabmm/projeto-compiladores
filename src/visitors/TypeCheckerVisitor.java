@@ -19,8 +19,8 @@ import java.util.List;
 import java.util.Stack;
 import java.util.Scanner;
 
-/*
- * Verificar como null deve se comportar
+/* TODO:
+ * Retorno da call tem que criar variável caso n exista
  */
 
 public class TypeCheckerVisitor extends Visitor {
@@ -345,7 +345,7 @@ public class TypeCheckerVisitor extends Visitor {
         SType leftExp = operands.pop();
         SType rightExp = operands.pop();
 
-        if (leftExp.match(tyBool) && rightExp.match(tyBool)) {
+        if (leftExp.match(rightExp) && (leftExp.match(tyFloat) || leftExp.match(tyChar) || leftExp.match(tyInt))) {
             operands.push(tyBool);
         } else {
             operands.push(tyError);
@@ -361,11 +361,22 @@ public class TypeCheckerVisitor extends Visitor {
         checkArithmeticBinOp(node, "ADD");
     }
     @Override
-        public void visit(And node) {
-            node.getRight().accept(this);
-            node.getLeft().accept(this);
-            checkBooleanBinOp(node, "AND");
+    public void visit(And node) {
+        node.getRight().accept(this);
+        node.getLeft().accept(this);
+
+        SType left = operands.pop();
+        SType right = operands.pop();
+
+        if (!left.match(tyBool) || !right.match(tyBool)) {
+            log.add(getColAndLine(node) + "Operação AND não permitida para os tipos: " + left.toString() + " e "
+                    + right.toString());
+            operands.push(tyError);
+        } else {
+            operands.push(tyBool);
         }
+    }
+
     @Override
     public void visit(Eq node) {
         node.getRight().accept(this);
