@@ -21,6 +21,7 @@ import java.util.Scanner;
 
 /* TODO:
  * Retorno da call tem que criar variável caso n exista
+ * NECESSARIO PRA JASMIN: mapear índex da variavel
  */
 
 public class TypeCheckerVisitor extends Visitor {

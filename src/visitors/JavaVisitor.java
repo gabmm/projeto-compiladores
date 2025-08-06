@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.Set;
-import java.util.TreeMap;
+import java.util.LinkedHashMap;
 
 public class JavaVisitor extends Visitor {
 
@@ -148,7 +148,7 @@ public class JavaVisitor extends Visitor {
         //adicionar variáveis do ambiente;
         ArrayList<ST> envVars = new ArrayList<ST>();
         LocalEnv<SType> local = envs.get(node.getName());
-        TreeMap<String, SType> vars = local.getEnv();
+        LinkedHashMap<String, SType> vars = local.getEnv();
         int counter = 0;
 
         for (Map.Entry<String, SType> var : vars.entrySet()){

@@ -62,15 +62,20 @@ public class Main {
                     typeChecker.printErrors();
                     break;
                 case "-src":
-                    TypeCheckerVisitor tc = new TypeCheckerVisitor();
-                    programNode.accept(tc);
-                    tc.printErrors();
-                    JavaVisitor jv = new JavaVisitor(tc.getEnvs());
+                    TypeCheckerVisitor tJava = new TypeCheckerVisitor();
+                    programNode.accept(tJava);
+                    tJava.printErrors();
+                    JavaVisitor jv = new JavaVisitor(tJava.getEnvs());
                     programNode.accept(jv);
                     jv.printProg();
                     break;
                 case "-gen":
-
+                    TypeCheckerVisitor tJasmin = new TypeCheckerVisitor();
+                    programNode.accept(tJasmin);
+                    tJasmin.printErrors();
+                    JasminVisitor jasv = new JasminVisitor(tJasmin.getEnvs());
+                    // programNode.accept(jasv);
+                    // jasv.printProg();
                     break;
                 default:
                     System.err.println("Diretiva desconhecida: " + directive);
