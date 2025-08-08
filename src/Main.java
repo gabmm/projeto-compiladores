@@ -74,8 +74,8 @@ public class Main {
                     programNode.accept(tJasmin);
                     tJasmin.printErrors();
                     JasminVisitor jasv = new JasminVisitor(tJasmin.getEnvs());
-                    // programNode.accept(jasv);
-                    // jasv.printProg();
+                    programNode.accept(jasv);
+                    jasv.printProg();
                     break;
                 default:
                     System.err.println("Diretiva desconhecida: " + directive);

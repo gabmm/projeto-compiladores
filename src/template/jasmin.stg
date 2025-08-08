@@ -30,40 +30,56 @@ int_type() ::= "I"
 float_type() ::= "F"
 boolean_type() ::= "Z"
 
-iprint(expr) ::= <<
+iprint(exp) ::= <<
+
 getstatic java/lang/System/out Ljava/io/PrintStream;
-<expr>
+<exp>
 invokevirtual java/io/PrintStream/println(I)V
 >>
 
-ireturn(expr) ::= <<
-<expr>
+ireturn(exp) ::= <<
+<exp>
 ireturn
 >>
 
-while(num,expr, stmt) ::= <<
-#<num>:
-<expr>
-ifeq #<num>#end
-<stmt>
-goto #<num>
-#<num>#end:
+iterate_cond_exp(label, exp, body) ::= <<
+#<label>:
+<exp>
+ifeq #<label>#end
+<body>
+goto #<label>
+#<label>#end:
 nop
 >>
 
-if(num, expr, thn, els) ::= <<
-<expr>
-ifeq #<num>
-<thn>
-goto #<num>#end
-#<num>:
-<els>
-#<num>#end:
+iterate_cond_id(label, id, exp, body) ::= <<
+#<label>:
+<exp>
+<id>
+isub
+ifgt #<label>#end
+<body>
+<id>
+iconst_1
+iadd
+goto #<label>
+#<label>#end:
 nop
 >>
 
-iarray(num, expr) ::= <<
-<expr>
+if_cmd(label, exp, then_cmd, else_cmd) ::= <<
+<exp>
+ifeq #<label>
+<then_cmd>
+goto #<label>#end
+#<label>:
+<else_cmd>
+#<label>#end:
+nop
+>>
+
+iarray(num, exp) ::= <<
+<exp>
 newarray int
 astore <num>
 >>
@@ -73,23 +89,24 @@ call(class, name, type, return, args) ::= <<
 invokestatic <class>/<name>(<type>)<return>
 >>
 
-istore(num, expr) ::= <<
-<expr>
-istore <num>
+assign_cmd(var_num, exp) ::= <<
+<exp>
+istore <var_num>
+
 >>
 
-iastore(num, index, expr) ::= <<
+iastore(num, index, exp) ::= <<
 aload <num>
 <index>
-<expr>
+<exp>
 iastore
 >>
 
-iaccess(num) ::= "iload <num>"
+var_access(num) ::= "iload <num>"
 
-iaaccess(num, expr) ::= <<
+iaaccess(num, exp) ::= <<
 aload <num>
-<expr>
+<exp>
 iaload
 >>
 
@@ -97,73 +114,60 @@ iaload(num) ::= <<
 aload <num>
 >>
 
-imul(left_expr, right_expr) ::= <<
-<left_expr>
-<right_expr>
-imul
+binary_exp(op, left_exp, right_exp) ::= <<
+<left_exp>
+<right_exp>
+<op>
 >>
 
-idiv(left_expr, right_expr) ::= <<
-<left_expr>
-<right_expr>
-idiv
->>
-
-imod(left_expr, right_expr) ::= <<
-<left_expr>
-<right_expr>
-irem
->>
-
-iadd(left_expr, right_expr) ::= <<
-<left_expr>
-<right_expr>
-iadd
->>
-
-isub(left_expr, right_expr) ::= <<
-<left_expr>
-<right_expr>
+lt_exp(label, left_exp, right_exp) ::= <<
+<right_exp>
+<left_exp>
 isub
->>
-
-ilt_expr(num, left_expr, right_expr) ::= <<
-<right_expr>
-<left_expr>
-isub
-ifgt #<num>
+ifgt #<label>
 iconst_0
-goto #<num>#<num>
-#<num>:
+goto #<label>#end
+#<label>:
 iconst_1
-#<num>#<num>:
+#<label>#end:
 >>
 
-iequals_expr(num, left_expr, right_expr) ::= <<
-<left_expr>
-<right_expr>
+eq_exp(label, left_exp, right_exp) ::= <<
+<left_exp>
+<right_exp>
 isub
-ifeq #<num>
+ifeq #<label>
 iconst_0
-goto #<num>#<num>
-#<num>:
+goto #<label>#end
+#<label>:
 iconst_1
-#<num>#<num>:
+#<label>#end:
 >>
 
-not_expr(expr) ::= <<
-<expr>
+neq_exp(label, left_exp, right_exp) ::= <<
+<left_exp>
+<right_exp>
+isub
+ifeq #<label>
+iconst_1
+goto #<label>#end
+#<label>:
+iconst_0
+#<label>#end:
+>>
+
+not_exp(exp) ::= <<
+<exp>
 iconst_1
 ixor
 >>
 
-and_expr(left_expr, right_expr) ::= <<
-<left_expr>
-<right_expr>
-iand
+neg_neg(exp) ::= <<
+<exp>
+ineg
 >>
 
 boolean_true() ::= "iconst_1"
 boolean_false() ::= "iconst_0"
-float_expr(value) ::= "ldc <value>"
-int_expr(value) ::= "sipush <value>"
+float_exp(value) ::= "ldc <value>"
+int_exp(value) ::= "sipush <value>"
