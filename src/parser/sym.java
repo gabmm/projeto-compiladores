@@ -55,7 +55,14 @@ public interface sym {
     short FLOAT = 42;
     short CHAR = 43;
     short ID = 44;
-
+    short MUL = 45;
+    short NBOOL = 46;
+    short NCHAR = 47;
+    short NEG = 48;
+    short NFLOAT = 50;
+    short NINT = 51;
+    short NNOT = 52;
+    short VAR = 53;
     // Não-terminais (para Symbol)
     short PROG = 100;
     short DEF = 101;
@@ -87,4 +94,9 @@ public interface sym {
     short ID_TYPE_LIST = 127;
     short OP = 128;
     short DECL_FUN_LIST = 129;
+    short ITCONDID = 130;
+    short ITCONDEXP = 131;
+    short CALL = 132;
+    short CALLSTMT = 133;
+    short ARRAYACCESS = 134;
 }
