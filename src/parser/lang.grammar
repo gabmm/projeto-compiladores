@@ -39,89 +39,92 @@ protected void recoverFromError(Symbol token, TokenStream in) throws IOException
 
 %typeof Prog = "Prog";
 %typeof def_list = "java.util.List<ast.Def>";
-%typeof def = "Def";
-%typeof data = "Data";
+//%typeof def = "Def";
+//%typeof data = "Data";
 %typeof decl_list = "java.util.List<ast.Decl>";
-%typeof decl = "ast.Decl";
-%typeof fun = "Fun";
-%typeof params_opt = "java.util.List<ast.Param>";
+//%typeof decl = "ast.Decl";
+//%typeof fun = "Fun";
+//%typeof param = "Param";
 %typeof params = "java.util.List<ast.Param>";
-%typeof id_type_list = "java.util.List<ast.Param>";
 %typeof types_opt = "java.util.List<ast.TType>";
 %typeof type_list = "java.util.List<ast.TType>";
-%typeof type = "TType";
-%typeof btype = "TType";
-%typeof block = "Block";
+//%typeof type = "TType";
+//%typeof btype = "TType";
+//%typeof block = "Block";
 %typeof cmd_list = "java.util.List<ast.Cmd>";
-%typeof cmd = "Cmd";
+//%typeof cmd = "Cmd";
 %typeof exp_list_bracket = "java.util.List<ast.Exp>";
 %typeof exp_list = "java.util.List<ast.Exp>";
 %typeof exps_opt = "java.util.List<ast.Exp>";
-%typeof exp = "Exp";
+//%typeof exp = "Exp";
 %typeof lvalue_opt = "java.util.List<ast.LValue>";
-%typeof lvalue = "LValue";
-%typeof itcond = "ItCond";
+//%typeof lvalue = "LValue";
+//%typeof itcond = "ItCond";
 %typeof lvalue_list = "java.util.List<ast.LValue>";
 %typeof op = "java.lang.String";
-%typeof ID = "java.lang.String";
-%typeof INT = "Integer";
-%typeof TYID = "java.lang.String";
+//%typeof ID = "java.lang.String";
+//%typeof INT = "Integer";
+//%typeof TYID = "java.lang.String";
 %typeof decl_fun_list = "java.util.List<ast.Def>";
-%typeof decl_or_fun = "Def";
+//%typeof decl_or_fun = "Def";
 
 %goal Prog;
 
 Prog
   = def_list.dl
     {:
-
-      return new Symbol(sym.PROG, new ast.Prog(dl));
+      Symbol start = (Symbol)dl.get(0);
+      Symbol end = (Symbol)dl.get(dl.size() - 1);
+      return new Symbol(sym.PROG, new ast.Prog(start, end, dl));
     :}
 ;
 
 def_list
   = def_list.dl def.d
     {:
-
-      dl.add(d);
+      dl.add((ast.Def)d.value);
       return new Symbol(sym.DEF_LIST, dl);
     :}
   | def.d
     {:
-
       var list = new java.util.ArrayList<ast.Def>();
-      list.add(d);
+      list.add((ast.Def)d.value);
+      
       return new Symbol(sym.DEF_LIST, list);
     :}
 ;
 
 def
   = data.d {: 
-
-  return new Symbol(sym.DEF, d); :}
-  | fun.f  {: 
-
-  return new Symbol(sym.DEF, f); :}
+    return new Symbol(sym.DEF, d.getStart(), d.getEnd(), d.value); :}
+  
+  | fun.f  
+  {: 
+      return new Symbol(sym.DEF, f.getStart(), f.getEnd(), f.value); 
+  :}
 ;
 
 data
-  = ABSTRACT DATA TYID.id LBRACE decl_fun_list.dfl RBRACE
+  = ABSTRACT.abs DATA TYID.id LBRACE decl_fun_list.dfl RBRACE.rb
     {:
-      String name = (String) id;
+      String name = (String)id.value;
       java.util.List<ast.Decl> decls = new java.util.ArrayList<>();
       java.util.List<ast.Fun> funs = new java.util.ArrayList<>();
       for (ast.Def def : dfl) {
           if (def instanceof ast.Decl)
-              decls.add((ast.Decl) def);
+              decls.add((ast.Decl) def.value);
           else if (def instanceof ast.Fun)
-              funs.add((ast.Fun) def);
+              funs.add((ast.Fun) def.value);
       }
-        return new Symbol(sym.DATA, new ast.Data(name, true, decls, funs));
+        ast.Data dataNode = new ast.Data(abs, rb, name, true, decls, funs);
+        return new Symbol(sym.DATA, dataNode);
     :}
-    | DATA TYID.id LBRACE decl_list.dl RBRACE
+    | DATA.dt TYID.id LBRACE decl_list.dl RBRACE.rb
     {: 
+      String name = (String)id.value;
       java.util.List<ast.Decl> decls = (java.util.List<ast.Decl>) dl;
-      return new Symbol(sym.DATA, new ast.Data(id, decls));
+      ast.Data dataNode = new ast.Data(dt, rb, name, decls);
+      return new Symbol(sym.DATA, dataNode);
     :}
 
 ;
@@ -129,96 +132,85 @@ data
 decl_fun_list
   = decl_fun_list.dfl decl_or_fun.df
   {:
-    dfl.add( (ast.Def) df);
+    dfl.add( (ast.Def)df.value);
     return new Symbol(sym.DECL_FUN_LIST, dfl);
   :}
   | decl_or_fun.df
   {:
 
     var list = new ArrayList<ast.Def>();
-    list.add((ast.Def) df);
+    list.add((ast.Def)df.value);
     return new Symbol(sym.DECL_FUN_LIST, list);
   :}
 ;
 
 decl_or_fun
-  = decl.d {: return new Symbol(sym.DECL, d); :}
-  | fun.f  {: return new Symbol(sym.FUN, f); :}
+  = decl.d {: return new Symbol(sym.DECL_OR_FUN, d); :}
+  | fun.f  {: return new Symbol(sym.DECL_OR_FUN, f); :}
 ;
 
 decl_list
   = decl_list.dl decl.d
     {:
-      dl.add( (ast.Decl) d);
+      dl.add( (ast.Decl)d.value);
       return new Symbol(sym.DECL_LIST, dl);
     :}
   | decl.d
     {:
       var list = new ArrayList<ast.Decl>();
-      list.add(d);
+      list.add((ast.Decl)d.value);
       return new Symbol(sym.DECL_LIST, list);
     :}
 ;
 
-decl
-  = ID.id DCOLON type.t SEMI
+decl 
+  = ID.id DCOLON type.t SEMI.sm
     {:
-
-      return new Symbol(sym.DECL, new ast.Decl(id,  t));
+       ast.Decl declNode = new ast.Decl(id, sm, (String)id.value, (TType)t.value );
+       return new Symbol(sym.DECL, declNode);
     :}
 ;
 
 fun
-  = ID.id LPAREN params_opt.pp RPAREN types_opt.tt cmd.c
+  = ID.id LPAREN params.pp RPAREN types_opt.tt cmd.c
     {:
-
-      String                      name   = id;
-      java.util.List<ast.Param>   params = pp;
-      java.util.List<ast.TType>   types  = tt;
-      ast.Cmd                     body   = c; 
-      List<ast.TType> ret = types; 
-
-      return new Symbol(sym.FUN, new ast.Fun(name, ret, params, body));
+        
+        String name_val = (String)id.value;
+        List<Param> params_list = (List<Param>)pp;
+        List<TType> types_list = (List<TType>)tt;
+        Cmd body_node = (Cmd)c.value;
+        ast.Fun funNode = new ast.Fun(id, c, name_val, types_list, params_list, body_node);
+        
+        return new Symbol(sym.FUN, funNode);
     :}
 ;
 
-params_opt
-  = params.p
-    {:
-
-      return new Symbol(sym.PARAMS_OPT, p);
-    :}
-  ;
-
-
+param 
+  = ID.id DCOLON type.t 
+  {:
+      String name = (String)id.value;
+      ast.Param paramNode = new ast.Param(id, t, name, (ast.TType)t.value);
+      return new Symbol(sym.PARAMS, paramNode);
+  :}
+;
 params
-  = ID.id DCOLON type.t id_type_list.itl
+  = params.list COMMA param.p
     {:
-
-      ast.Param param = new ast.Param(id, t);
-      itl.add(0, param);
-      return new Symbol(sym.PARAMS, itl);
+        list.add((ast.Param)p.value);
+        return new Symbol(sym.PARAMS, list);
     :}
-  | /* vazio */
+  | param.p
+    {: 
+      java.util.List<ast.Param> list = new java.util.ArrayList<>();
+      list.add((ast.Param)p.value);
+      return new Symbol(sym.PARAMS, list);
+    :}
+    | 
     {:
-      return new Symbol(sym.PARAMS, new java.util.ArrayList<ast.Param>());
+        
+        return new Symbol(sym.PARAMS, new java.util.ArrayList<ast.Param>());
     :}
   ;
-
-id_type_list
-  = COMMA ID.id DCOLON type.t id_type_list.itl
-    {:
-
-      String id2 = (String) id;
-      itl.add(0, new ast.Param(id2, t)); 
-      return new Symbol(sym.ID_TYPE_LIST, itl);
-    :}
-  | /* vazio */
-    {:
-
-      return new Symbol(sym.ID_TYPE_LIST, new java.util.ArrayList<ast.Param>());
-    :}
-;
 
 types_opt
   = COLON type_list.tl
@@ -237,61 +229,69 @@ types_opt
 type_list
   = type_list.tl COMMA type.t
     {:
-      tl.add(t);
+      tl.add((ast.TType)t.value);
       return new Symbol(sym.TYPE_LIST, tl);
     :}
   | type.t
     {:
       java.util.List<ast.TType> list = new java.util.ArrayList<>();
-      list.add(t);
+      list.add((ast.TType)t.value);
       return new Symbol(sym.TYPE_LIST, list);
     :}
   ;
 
 
 type
-  = type.t LBRACKET RBRACKET
+  = type.t LBRACKET RBRACKET.rb
     {:
-
-      return new Symbol(sym.TYPE, new ast.TTypeArray(t));
+      return new Symbol(sym.TYPE, new ast.TTypeArray(t, rb, (TType)t.value));
     :}
   | btype.b
     {:
-
-      return new Symbol(sym.TYPE, b);
+      return new Symbol(sym.TYPE, b.getStart(), b.getEnd(), b.value);
     :}
 ;
 
-
-
-
-btype
-  = TYINT   {: return new Symbol(sym.BTYPE, new ast.TyInt()); :}
-  | TYCHAR  {: return new Symbol(sym.BTYPE, new ast.TyChar()); :}
-  | TYBOOL  {: return new Symbol(sym.BTYPE, new ast.TyBool()); :}
-  | TYFLOAT {: return new Symbol(sym.BTYPE, new ast.TyFloat()); :}
-  | TYID.id {: return new Symbol(sym.BTYPE, new ast.TyId(id)); :}
+btype = TYINT.t
+    {:
+        return new Symbol(sym.BTYPE, new ast.TyInt(t, t));
+    :}
+  | TYCHAR.t
+    {:
+        return new Symbol(sym.BTYPE, new ast.TyChar(t, t));
+    :}
+  | TYBOOL.t
+    {:
+        return new Symbol(sym.BTYPE, new ast.TyBool(t, t));
+    :}
+  | TYFLOAT.t
+    {:
+        return new Symbol(sym.BTYPE, new ast.TyFloat(t, t));
+    :}
+  | TYID.t
+    {:
+        return new Symbol(sym.BTYPE, new ast.TyId(t, t, (String)t.value));
+    :}
   ;
 
-
 block
-  = LBRACE cmd_list.cl RBRACE 
+  = LBRACE.lb cmd_list.cl RBRACE.rb 
     {:
-
-      return new Symbol(sym.BLOCK, new ast.Block(cl));
+      ast.Block blockNode = new ast.Block(lb, rb, cl);
+      return new Symbol(sym.BLOCK, blockNode);
     :}
   ;
 
 cmd_list
   = cmd_list.cl cmd.c
     {:
-
-      cl.add( c);
+      
+      cl.add((ast.Cmd)c.value);
       return new Symbol(sym.CMD_LIST, cl);
     :}
   | /* vazio */
     {:
-
+      
       return new Symbol(sym.CMD_LIST, new java.util.ArrayList<ast.Cmd>());
     :}
   ;
@@ -300,52 +300,60 @@ cmd_list
 cmd
   = block.b
     {:
-
-      return new Symbol(sym.CMD, b);
+      
+      return new Symbol(sym.CMD, b.getStart(), b.getEnd(), b.value);
     :}
 
-  | IF LPAREN exp.e RPAREN cmd.c
+  | IF.i LPAREN exp.e RPAREN cmd.c
     {:
-        return new Symbol(sym.CMD, new ast.If(e, c, null));
+        ast.If ifNode = new ast.If(i, c, (Exp)e.value, (Cmd)c.value, null);
+        return new Symbol(sym.CMD, ifNode);
     :}
 
-  | IF LPAREN exp.e RPAREN cmd.c ELSE cmd.c2
+  | IF.i LPAREN exp.e RPAREN cmd.c ELSE cmd.c2
     {:
-      return new Symbol(sym.CMD, new ast.If(e, c, c2));
+        ast.If ifNode = new ast.If(i, c2, (Exp)e.value, (Cmd)c.value, (Cmd)c2.value);
+        return new Symbol(sym.CMD, ifNode);
     :}
 
-  | ITERATE LPAREN itcond.it RPAREN cmd.c
+  | ITERATE.it LPAREN itcond.itc RPAREN cmd.c
     {:
-      return new Symbol(sym.CMD, new ast.Iterate(it, c));
+        ast.Iterate iterateNode = new ast.Iterate(it, c, (ItCond)itc.value, (Cmd)c.value);
+        return new Symbol(sym.CMD, iterateNode);
     :}
 
-  | READ lvalue.l SEMI
+  | READ.r lvalue.l SEMI.sm
     {:
-      return new Symbol(sym.CMD, new ast.Read(l));
+      ast.Read readNode = new ast.Read(r,sm, (ast.LValue)l.value);
+      return new Symbol(sym.CMD, readNode);
     :}
 
-  | PRINT exp.ex SEMI
+  | PRINT.p exp.ex SEMI.sm
     {:
-
-      return new Symbol(sym.CMD, new ast.Print(ex));
+      ast.Print printNode = new ast.Print(p, sm, (ast.Exp)ex.value);
+      return new Symbol(sym.CMD,printNode);
     :}
 
-  | RETURN exp_list.el SEMI
+  | RETURN.r exp_list.el SEMI.sm
     {:
-
-      return new Symbol(sym.CMD, new ast.Return(el));
+      ast.Return returnNode = new ast.Return(r, sm, el);
+      return new Symbol(sym.CMD,returnNode);
     :}
 
-  | lvalue.lv ASSIGN exp.e SEMI
+  | lvalue.lv ASSIGN exp.e SEMI.sm
     {:
-
-      return new Symbol(sym.CMD, new ast.Assign(lv, e)); // (a,5)
+      
+      
+      if (lv == null || e == null) {  }
+      ast.Assign assignNode = new ast.Assign(lv, sm, (ast.LValue)lv.value, (ast.Exp)e.value);
+      
+      return new Symbol(sym.CMD, assignNode);
     :}
 
-  | ID.id LPAREN exps_opt.eo RPAREN lvalue_opt.lo SEMI
+  | ID.id LPAREN exps_opt.eo RPAREN lvalue_opt.lo SEMI.sm
     {:
-
-      return new Symbol(sym.CMD, new ast.CallStmt(id, eo, lo));
+      ast.CallStmt callstmtNode = new ast.CallStmt(id, sm, (String)id.value, eo, lo);
+      return new Symbol(sym.CMD,callstmtNode);
     :}
 ;
 
@@ -363,13 +371,13 @@ exps_opt
 exp_list
   = exp_list.el COMMA exp.ex
     {:
-      el.add(ex);
+      el.add((ast.Exp)ex.value);
       return new Symbol(sym.EXP_LIST, el);
     :}
   | exp.ex
     {:
       java.util.List<ast.Exp> list = new java.util.ArrayList<>();
-      list.add(ex);
+      list.add((ast.Exp)ex.value);
       return new Symbol(sym.EXP_LIST, list);
     :}
   ;
@@ -389,14 +397,14 @@ lvalue_opt
 lvalue_list
   = lvalue_list.ll COMMA lvalue.lva
     {:
-      ll.add(lva);
+      ll.add((ast.LValue)lva.value);
       return new Symbol(sym.LVALUE_LIST, ll);
     :}
   | lvalue.lv
     {:
 
       java.util.List<ast.LValue> list = new java.util.ArrayList<>();
-      list.add(lv);
+      list.add((ast.LValue)lv.value);
       return new Symbol(sym.LVALUE_LIST, list);
    
     :}
@@ -405,123 +413,73 @@ lvalue_list
 itcond
   = ID.id COLON exp.e
     {:
-      return new Symbol(sym.ITCOND, new ast.ItCondId(id, e));
+      return new Symbol(sym.ITCOND, new ast.ItCondId(id, e, (String)id.value, (Exp)e.value));
     :}
   | exp.e
     {:
-
-      return new Symbol(sym.ITCOND, new ast.ItCondExp(e));
+      return new Symbol(sym.ITCOND, new ast.ItCondExp(e, e, (Exp)e.value));
     :}
   ;
 
+exp 
+= exp.a PLUS exp.b    {: return new Symbol(sym.EXP, new ast.Add(a, b, (Exp)a.value, (Exp)b.value)); :}
+  | exp.a MINUS exp.b   {: return new Symbol(sym.EXP, new ast.Sub(a, b, (Exp)a.value, (Exp)b.value)); :}
+  | exp.a TIMES exp.b   {: return new Symbol(sym.EXP, new ast.Mul(a, b, (Exp)a.value, (Exp)b.value)); :}
+  | exp.a DIV exp.b     {: return new Symbol(sym.EXP, new ast.Div(a, b, (Exp)a.value, (Exp)b.value)); :}
+  | exp.a MOD exp.b     {: return new Symbol(sym.EXP, new ast.Mod(a, b, (Exp)a.value, (Exp)b.value)); :}
+  | exp.a EQ exp.b      {: return new Symbol(sym.EXP, new ast.Eq(a, b, (Exp)a.value, (Exp)b.value)); :}
+  | exp.a LT exp.b      {: return new Symbol(sym.EXP, new ast.Lt(a, b, (Exp)a.value, (Exp)b.value)); :}
+  | exp.a AND exp.b     {: return new Symbol(sym.EXP, new ast.And(a, b, (Exp)a.value, (Exp)b.value)); :}
+  | exp.a NEQ exp.b     {: return new Symbol(sym.EXP, new ast.Neq(a, b, (Exp)a.value, (Exp)b.value)); :}
+| NOT.op exp.e {: return new Symbol(sym.EXP, new ast.NNot(op, e, (Exp)e.value)); :}
+| MINUS.op exp.e {: return new Symbol(sym.EXP, new ast.Neg(op, e, (Exp)e.value)); :}
 
-exp
-  = exp.a PLUS exp.b
-    {: return new Symbol(sym.EXP, new ast.Add(a, b)); :}
+| lvalue.lv {: 
+    
+    return new Symbol(sym.EXP, lv.getStart(), lv.getEnd(), lv.value); :}
 
-  | exp.a MINUS exp.b
-    {: return new Symbol(sym.EXP, new ast.Sub(a, b)); :}
+| LPAREN.lp exp.e RPAREN.rp
+{:
+    ((Node)e.value).setLocation(lp, rp);
+    
+    return new Symbol(sym.EXP, e.getStart(), e.getEnd(), e.value);
+:}
+| NEW.n type.t exp_list_bracket.el
+{:
+    Symbol end = (el != null) ? (Symbol)t : n;
+    return new Symbol(sym.EXP, new ast.New(n, end, (TType)t.value, el));
+:}
 
-  | exp.a TIMES exp.b
-    {: return new Symbol(sym.EXP, new ast.Mul(a, b)); :}
+| ID.id LPAREN exps_opt.e RPAREN LBRACKET exp.ex RBRACKET.rb
+{:
+    return new Symbol(sym.EXP, new ast.Call(id, rb, (String)id.value, e, (Exp)ex.value));
+:}
 
-  | exp.a DIV exp.b
-    {: return new Symbol(sym.EXP, new ast.Div(a, b)); :}
+| TRUE.t {: return new Symbol(sym.EXP, new ast.NBool(t, t, true)); :}
+| FALSE.f {: return new Symbol(sym.EXP, new ast.NBool(f, f, false)); :}
+| NULL.n {: return new Symbol(sym.EXP, new ast.Null(n, n)); :}
 
-  | exp.a MOD exp.b
-    {: return new Symbol(sym.EXP, new ast.Mod(a, b)); :}
-
-  | exp.a EQ exp.b
-    {: return new Symbol(sym.EXP, new ast.Eq(a, b)); :}
-
-  | exp.a LT exp.b
-    {: return new Symbol(sym.EXP, new ast.Lt(a, b)); :}
-
-  | exp.a AND exp.b
-    {: return new Symbol(sym.EXP, new ast.And(a, b)); :}
-
-  | exp.a NEQ exp.b
-    {: 
-      return new Symbol(sym.EXP, new ast.Neq(a, b)); 
-    :}
-
-  | NOT exp.e
-    {:
-      return new Symbol(sym.EXP, new ast.NNot(e));
-    :}
-
-  | MINUS exp.e
-    {:
-      return new Symbol(sym.EXP, new ast.Neg(e));
-    :}
-
-  | lvalue.lv
-    {:
-
-      return new Symbol(sym.EXP, lv);
-    :}
-
-  | LPAREN exp.e RPAREN
-    {:
-      return new Symbol(sym.EXP, e);
-    :}
-
-  | NEW type.ty exp_list_bracket.el
-    {:
-      java.util.List<ast.Exp> elb = (java.util.List<ast.Exp>) el;
-      if (elb.size() != 0) {
-        TTypeArray tarray = new TTypeArray(ty);
-        return new Symbol(sym.EXP, new ast.New(tarray, elb));
-      } else {
-        return new Symbol(sym.EXP, new ast.New(ty, elb));
-      }
-    :}
-
-  | ID.id LPAREN exps_opt.e RPAREN LBRACKET exp.ex RBRACKET
-    {:
-      return new Symbol(sym.EXP, new ast.Call(id, e, ex));
-    :}
-
-  | TRUE
-    {:
-      return new Symbol(sym.EXP, new ast.NBool(true));
-    :}
-
-  | FALSE
-    {:
-      return new Symbol(sym.EXP, new ast.NBool(false));
-    :}
-
-  | NULL
-    {:
-      return new Symbol(sym.EXP, new ast.Null());
-    :}
-
-  | INT.i
-    {:
-
-       return new Symbol(sym.EXP, new ast.NInt((Integer)i));
-    :}
-
-  | FLOAT.fl
-    {:
-      float f = ((Number) fl.value).floatValue();
-      return new Symbol(sym.EXP, new ast.NFloat(f));
-    :}
-
-  | CHAR.ch
-    {:
-      char c = (Character) ch.value;;
-      return new Symbol(sym.EXP, new ast.NChar(c));
-    :}
+| INT.i
+{:
+    ast.NInt nintnode = new ast.NInt(i, i, (Integer)i.value);
+    
+    return new Symbol(sym.EXP, new ast.NInt(i, i, (Integer)i.value));
+:}
+| FLOAT.f
+{:
+    return new Symbol(sym.EXP, new ast.NFloat(f, f, ((Number)f.value).floatValue()));
+:}
+| CHAR.c
+{:
+    return new Symbol(sym.EXP, new ast.NChar(c, c, (Character)c.value));
+:}
 ;
-
 
 exp_list_bracket
   = LBRACKET exp.ex RBRACKET
     {:
       java.util.List<ast.Exp> list = new java.util.ArrayList<>();
-      list.add((ast.Exp) ex);
+      list.add((ast.Exp) ex.value);
       return new Symbol(sym.EXP_LIST_BRACKET, list);
     :}
   | /* vazio */
@@ -530,7 +488,7 @@ exp_list_bracket
     :}
   |  exp_list_bracket.list LBRACKET exp.e RBRACKET 
     {:
-      list.add((ast.Exp) e);
+      list.add((ast.Exp) e.value);
       return new Symbol(sym.EXP_LIST_BRACKET, list);
     :}
 
@@ -553,19 +511,22 @@ op
 lvalue
   = ID.id
     {:
-
-      return new Symbol(sym.LVALUE, new ast.Var(id));
+      String id_val = (String)id.value;
+      ast.Var varNode = new ast.Var(id, id, id_val);
+      
+      return new Symbol(sym.LVALUE, new ast.Var(id, id, (String)id.value));
     :}
 
-  | lvalue.lv LBRACKET exp.e RBRACKET
+  | lvalue.lv LBRACKET exp.e RBRACKET.rb
     {:
-
-      return new Symbol(sym.LVALUE, new ast.ArrayAccess(lv, e));
+      ast.ArrayAccess accessNode = new ast.ArrayAccess(lv,rb, (ast.LValue)lv.value, (ast.Exp)e.value);
+      return new Symbol(sym.LVALUE, accessNode);
     :}
 
   | lvalue.lv DOT ID.id
     {:
-      return new Symbol(sym.LVALUE, new ast.Dot(lv, id));
+      ast.Dot dotNode = new ast.Dot(lv,id, (ast.LValue)lv.value, (String)id.value);
+      return new Symbol(sym.LVALUE, dotNode);
     :}
   ;
 
