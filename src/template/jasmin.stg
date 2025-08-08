@@ -1,0 +1,173 @@
+group jasmin;
+
+program(funs) ::= <<
+.class public ProgramaLang
+.super java/lang/Object
+
+    <funs; separator="\n\n">
+
+    .method public static main([Ljava/lang/String;)V
+        .limit stack 1
+        invokestatic ProgramaLang/_main()I
+        return
+    .end method
+>>
+
+fun(return, name, params, env_vars_qtd, stack_max, block) ::= <<
+.method static <name>(<params>)<return>
+    .limit stack <stack_max>
+    .limit locals <env_vars_qtd>
+    <block>
+.end method
+>>
+
+block(commands) ::= <<
+<commands; separator="\n">
+>>
+
+array_type(type) ::= "[<type>"
+int_type() ::= "I"
+float_type() ::= "F"
+boolean_type() ::= "Z"
+
+iprint(exp) ::= <<
+
+getstatic java/lang/System/out Ljava/io/PrintStream;
+<exp>
+invokevirtual java/io/PrintStream/println(I)V
+>>
+
+ireturn(exp) ::= <<
+<exp>
+ireturn
+>>
+
+iterate_cond_exp(label, exp, body) ::= <<
+#<label>:
+<exp>
+ifeq #<label>#end
+<body>
+goto #<label>
+#<label>#end:
+nop
+>>
+
+iterate_cond_id(label, id, exp, body) ::= <<
+#<label>:
+<exp>
+<id>
+isub
+ifgt #<label>#end
+<body>
+<id>
+iconst_1
+iadd
+goto #<label>
+#<label>#end:
+nop
+>>
+
+if_cmd(label, exp, then_cmd, else_cmd) ::= <<
+<exp>
+ifeq #<label>
+<then_cmd>
+goto #<label>#end
+#<label>:
+<else_cmd>
+#<label>#end:
+nop
+>>
+
+iarray(num, exp) ::= <<
+<exp>
+newarray int
+astore <num>
+>>
+
+call(class, name, type, return, args) ::= <<
+<args; separator="\n">
+invokestatic <class>/<name>(<type>)<return>
+>>
+
+assign_cmd(var_num, exp) ::= <<
+<exp>
+istore <var_num>
+
+>>
+
+iastore(num, index, exp) ::= <<
+aload <num>
+<index>
+<exp>
+iastore
+>>
+
+var_access(num) ::= "iload <num>"
+
+iaaccess(num, exp) ::= <<
+aload <num>
+<exp>
+iaload
+>>
+
+iaload(num) ::= <<
+aload <num>
+>>
+
+binary_exp(op, left_exp, right_exp) ::= <<
+<left_exp>
+<right_exp>
+<op>
+>>
+
+lt_exp(label, left_exp, right_exp) ::= <<
+<right_exp>
+<left_exp>
+isub
+ifgt #<label>
+iconst_0
+goto #<label>#end
+#<label>:
+iconst_1
+#<label>#end:
+>>
+
+eq_exp(label, left_exp, right_exp) ::= <<
+<left_exp>
+<right_exp>
+isub
+ifeq #<label>
+iconst_0
+goto #<label>#end
+#<label>:
+iconst_1
+#<label>#end:
+>>
+
+neq_exp(label, left_exp, right_exp) ::= <<
+<left_exp>
+<right_exp>
+isub
+ifeq #<label>
+iconst_1
+goto #<label>#end
+#<label>:
+iconst_0
+#<label>#end:
+>>
+
+not_exp(exp) ::= <<
+<exp>
+iconst_1
+ixor
+>>
+
+neg_neg(exp) ::= <<
+<exp>
+ineg
+>>
+
+boolean_true() ::= "iconst_1"
+boolean_false() ::= "iconst_0"
+float_exp(value) ::= "ldc <value>"
+int_exp(value) ::= "sipush <value>"

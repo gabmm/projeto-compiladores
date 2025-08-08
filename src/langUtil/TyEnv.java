@@ -1,4 +1,6 @@
 package langUtil;
+
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Stack;
 import java.util.TreeMap;
@@ -13,17 +15,17 @@ public class TyEnv<A> {
      * adicionando a ela o nome da funcao
      */
 
-    private TreeMap<String, A> typeEnv;
+    private LinkedHashMap<String, A> typeEnv;
 
     public TyEnv(){
-        this.typeEnv = new TreeMap<String,A>();
+        this.typeEnv = new LinkedHashMap<String, A>();
     }
 
     public A get(String id){
         return this.typeEnv.get(id);
     }
 
-    public TreeMap<String, A> getEnv() {
+    public LinkedHashMap<String, A> getEnv() {
         return this.typeEnv;
     }
 
