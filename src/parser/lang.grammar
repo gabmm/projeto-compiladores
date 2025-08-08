@@ -39,34 +39,20 @@ protected void recoverFromError(Symbol token, TokenStream in) throws IOException
 
 %typeof Prog = "Prog";
 %typeof def_list = "java.util.List<ast.Def>";
-//%typeof def = "Def";
-//%typeof data = "Data";
 %typeof decl_list = "java.util.List<ast.Decl>";
-//%typeof decl = "ast.Decl";
-//%typeof fun = "Fun";
-//%typeof param = "Param";
 %typeof params = "java.util.List<ast.Param>";
 %typeof types_opt = "java.util.List<ast.TType>";
 %typeof type_list = "java.util.List<ast.TType>";
-//%typeof type = "TType";
-//%typeof btype = "TType";
-//%typeof block = "Block";
 %typeof cmd_list = "java.util.List<ast.Cmd>";
-//%typeof cmd = "Cmd";
 %typeof exp_list_bracket = "java.util.List<ast.Exp>";
 %typeof exp_list = "java.util.List<ast.Exp>";
 %typeof exps_opt = "java.util.List<ast.Exp>";
-//%typeof exp = "Exp";
 %typeof lvalue_opt = "java.util.List<ast.LValue>";
-//%typeof lvalue = "LValue";
-//%typeof itcond = "ItCond";
 %typeof lvalue_list = "java.util.List<ast.LValue>";
 %typeof op = "java.lang.String";
 //%typeof ID = "java.lang.String";
-//%typeof INT = "Integer";
 //%typeof TYID = "java.lang.String";
 %typeof decl_fun_list = "java.util.List<ast.Def>";
-//%typeof decl_or_fun = "Def";
 
 %goal Prog;
 
@@ -89,19 +75,13 @@ def_list
     {:
       var list = new java.util.ArrayList<ast.Def>();
       list.add((ast.Def)d.value);
-      
       return new Symbol(sym.DEF_LIST, list);
     :}
 ;
 
 def
-  = data.d {: 
-    return new Symbol(sym.DEF, d.getStart(), d.getEnd(), d.value); :}
-  
-  | fun.f  
-  {: 
-      return new Symbol(sym.DEF, f.getStart(), f.getEnd(), f.value); 
-  :}
+  = data.d {:  return new Symbol(sym.DEF, d.getStart(), d.getEnd(), d.value); :}
+  | fun.f  {:  return new Symbol(sym.DEF, f.getStart(), f.getEnd(), f.value); :}
 ;
 
 data
@@ -137,7 +117,6 @@ decl_fun_list
   :}
   | decl_or_fun.df
   {:
-
     var list = new ArrayList<ast.Def>();
     list.add((ast.Def)df.value);
     return new Symbol(sym.DECL_FUN_LIST, list);
@@ -180,7 +159,6 @@ fun
         List<TType> types_list = (List<TType>)tt;
         Cmd body_node = (Cmd)c.value;
         ast.Fun funNode = new ast.Fun(id, c, name_val, types_list, params_list, body_node);
-        
         return new Symbol(sym.FUN, funNode);
     :}
 ;
@@ -217,7 +195,7 @@ types_opt
     {:
       return new Symbol(sym.TYPES_OPT, tl);
     :}
-  | /* vazio */
+  |
     {:
 
       return new Symbol(sym.TYPES_OPT, new java.util.ArrayList<ast.TType>());
