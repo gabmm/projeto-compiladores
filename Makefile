@@ -3,7 +3,7 @@ ifeq ($(OS),Windows_NT)
     RM           = rmdir /s /q $(subst /,\,$(1)) 2>nul || del /f /q $(subst /,\,$(1)) 2>nul || echo.
     CP_SEPARATOR = ;
     JAVA_SOURCES = $(shell dir /s /b $(subst /,\,$(SRC_DIR))\\*.java)
-	REDIRECT_STDERR = 2>NUL
+	REDIRECT_STDERR = 
 else
     MKDIR_P      = mkdir -p $(1)
     RM           = rm -rf $(1)
