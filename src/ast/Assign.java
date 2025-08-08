@@ -9,13 +9,16 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class Assign extends Cmd {
     private LValue lhs; 
     private Exp rhs;    
 
-    public Assign(LValue lhs, Exp rhs) {
+    public Assign(Symbol start, Symbol end, LValue lhs, Exp rhs) {
+        super(sym.ASSIGN, start, end); 
         this.lhs = lhs;
         this.rhs = rhs;
     }

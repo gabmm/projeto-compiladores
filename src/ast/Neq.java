@@ -9,13 +9,16 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class Neq extends Exp {
     private Exp left;
     private Exp right;
 
-    public Neq(Exp left, Exp right) {
+    public Neq(Symbol start, Symbol end, Exp left, Exp right) {
+        super(sym.NEQ, start, end);
         this.left = left;
         this.right = right;
     }

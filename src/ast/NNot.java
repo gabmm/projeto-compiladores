@@ -9,12 +9,15 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class NNot extends Exp {
     private Exp exp;
 
-    public NNot(Exp exp) {
+    public NNot(Symbol start, Symbol end,Exp exp) {
+        super(sym.NNOT, start, end);
         this.exp = exp;
     }
 

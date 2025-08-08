@@ -9,12 +9,15 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class TyId extends TType {
     private String name;
 
-    public TyId(String name) {
+    public TyId(Symbol start, Symbol end, String name) {
+        super(sym.TYID, start, end);
         this.name = name;
     }
 

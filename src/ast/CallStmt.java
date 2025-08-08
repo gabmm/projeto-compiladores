@@ -10,6 +10,9 @@
 package ast;
 
 import java.util.List;
+
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class CallStmt extends Cmd {
@@ -17,7 +20,8 @@ public class CallStmt extends Cmd {
     private final List<Exp> args;
     private final List<LValue> returns; 
 
-    public CallStmt(String id, List<Exp> args, List<LValue> returns) {
+    public CallStmt(Symbol start, Symbol end, String id, List<Exp> args, List<LValue> returns) {
+        super(sym.CALLSTMT, start, end); 
         this.id = id;
         this.args = args;
         this.returns = returns;

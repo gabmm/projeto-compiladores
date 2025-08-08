@@ -9,12 +9,15 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class NChar extends Exp{
     private char value;
 
-    public NChar ( char value){
+    public NChar ( Symbol start, Symbol end, char value){
+        super(sym.NCHAR, start, end);
         this.value = value;
     }
 

@@ -9,8 +9,13 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public abstract class LValue extends Exp {
+    public LValue(short id, Symbol start, Symbol end) {
+        super(id, start, end);
+    }
     public abstract void accept(Visitor v);
 }

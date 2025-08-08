@@ -10,12 +10,15 @@
 package ast;
 
 import visitors.Visitor;
+import beaver.Symbol;
+import parser.sym; 
 
 public class ItCondId extends ItCond {
     private String id;
     private Exp cond;
 
-    public ItCondId(String id, Exp cond) {
+    public ItCondId(Symbol start, Symbol end, String id, Exp cond) {
+        super(sym.ITCONDID, start, end);
         this.id = id;
         this.cond = cond;
     }

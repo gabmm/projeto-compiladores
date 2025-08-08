@@ -8,10 +8,14 @@
  */
 
 package ast;
+import beaver.Symbol;
 
 public abstract class Def extends Node {
     protected String name;
 
+    public Def(short id, Symbol start, Symbol end) {
+        super(id, start, end);
+    }
     public Def(String name) {
         this.name = name;
     }

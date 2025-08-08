@@ -9,12 +9,19 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class TTypeArray extends TType {
     private TType base;
 
-    public TTypeArray(TType base) {
+    public TTypeArray(TType baseType) {
+        super(sym.TYPE_LIST, null, null); 
+        this.base = baseType;
+    }
+    public TTypeArray(Symbol start, Symbol end,TType base) {
+        super(sym.TYPE_LIST, start, end);
         this.base = base;
     }
 

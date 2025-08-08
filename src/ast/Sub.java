@@ -8,12 +8,14 @@
  */
 
 package ast;
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class Sub extends BinOP {
 
-    public Sub(Exp l, Exp r){
-        super(l, r);
+    public Sub(Symbol start, Symbol end,Exp l, Exp r){
+        super(sym.MINUS,start, end, l, r);
     }
 
     public String toString(){

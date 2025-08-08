@@ -9,10 +9,14 @@
 
 package ast;
 
+import java.util.ArrayList;
 import java.util.List;
 import visitors.Visitor;
+import parser.Terminals;
+import beaver.Symbol;
 
 public class Data extends Def {
+    private String name;
     private boolean isAbstract;
     private List<Decl> decls; 
     private List<Fun> funs;   
@@ -24,13 +28,20 @@ public class Data extends Def {
         this.funs = funs;
     }
 
-    public Data(String name, List<Decl> decls) {
-        super(name);
-        this.isAbstract = false;
+    public Data(Symbol start, Symbol end, String name, boolean isAbstract, List<Decl> decls, List<Fun> funs) {
+        super(Terminals.ABSTRACT, start, end);
+        this.name = name;
+        this.isAbstract = isAbstract;
         this.decls = decls;
-        this.funs = List.of();
+        this.funs = funs;
     }
-
+    public Data(Symbol start, Symbol end, String name, List<Decl> decls) {
+            super(Terminals.DATA, start, end);
+            this.name = name;
+            this.isAbstract = false; 
+            this.decls = decls;
+            this.funs = new ArrayList<>();
+        }
     public boolean isAbstract() {
         return isAbstract;
     }

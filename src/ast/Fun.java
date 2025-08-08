@@ -11,24 +11,35 @@ package ast;
 
 import visitors.Visitor;
 import java.util.List;
+import beaver.Symbol;
+import parser.sym;
 
 public class Fun extends Def {
-
+    private String name;
     private List<TType> type; 
     private List<Param> params;
     private Cmd body;
 
     public Fun(String id, List<TType> type, List<Param> params, Cmd body){
         super(id);
+        this.name = id;
         this.type = type;
         this.params = params;
         this.body = body;
     }
-
+    public Fun(Symbol start, Symbol end, String name, List<TType> type, List<Param> params, Cmd body) {
+        super(sym.FUN, start, end);
+        this.name = name;
+        this.type = type;
+        this.params = params;
+        this.body = body;
+    }
     public List<TType> getType() { return type; }
     public List<Param> getParams() { return params; }
     public Cmd getBody() { return body; }
-
+    public String getName() {
+            return this.name;
+        }
     @Override
     public String toString(){
         StringBuilder sb = new StringBuilder();

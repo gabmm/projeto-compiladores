@@ -9,12 +9,15 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class Neg extends Exp {
     private Exp exp;
 
-    public Neg(Exp exp) {
+    public Neg(Symbol start, Symbol end,Exp exp) {
+        super(sym.NEG, start, end);
         this.exp = exp;
     }
 

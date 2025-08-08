@@ -9,12 +9,15 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class NFloat extends Exp{
     private float value;
 
-    public NFloat ( float value){
+    public NFloat ( Symbol start, Symbol end, float value){
+        super(sym.NFLOAT, start, end);
         this.value = value;
     }
 

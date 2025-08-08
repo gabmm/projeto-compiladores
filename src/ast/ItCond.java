@@ -8,10 +8,13 @@
  */
 
 package ast;
-
+import beaver.Symbol;
 import visitors.Visitor;
 
 public abstract class ItCond extends Cmd {
+    public ItCond(short id, Symbol start, Symbol end) {
+        super(id, start, end);
+    }
     public abstract void accept(Visitor v);
 }
 

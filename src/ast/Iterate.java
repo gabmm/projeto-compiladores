@@ -9,13 +9,16 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class Iterate extends Cmd {
     private ItCond condition;  
     private Cmd body;          
 
-    public Iterate(ItCond condition, Cmd body) {
+    public Iterate(Symbol start, Symbol end, ItCond condition, Cmd body) {
+        super(sym.ITERATE, start, end);
         this.condition = condition;
         this.body = body;
     }

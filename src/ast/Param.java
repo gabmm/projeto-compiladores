@@ -9,6 +9,8 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class Param extends Node {
@@ -16,7 +18,8 @@ public class Param extends Node {
     private String id;
     private TType type;
 
-    public Param(String id, TType type){
+    public Param(Symbol start, Symbol end,String id, TType type){
+        super(sym.PARAMS, start, end);
         this.id = id;
         this.type = type;
     }

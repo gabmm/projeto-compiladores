@@ -9,12 +9,15 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class NBool extends Exp {
     private boolean value;
 
-    public NBool(boolean value) {
+    public NBool(Symbol start, Symbol end, boolean value) {
+        super(sym.NBOOL, start, end);
         this.value = value;
     }
 

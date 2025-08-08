@@ -9,11 +9,13 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class Mod extends BinOP {
-    public Mod(Exp left, Exp right) {
-        super(left, right);
+    public Mod(Symbol start, Symbol end, Exp left, Exp right) {
+        super(sym.MOD, start, end, left, right);
     }
 
     @Override

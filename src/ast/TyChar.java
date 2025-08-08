@@ -9,6 +9,8 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class TyChar extends TType {
@@ -16,7 +18,9 @@ public class TyChar extends TType {
     public boolean match(TType t) {
         return t instanceof TyChar;
     }
-
+    public TyChar(Symbol start, Symbol end) {
+            super(sym.TYCHAR, start, end);
+    }
     @Override
     public void accept(Visitor v) {
         v.visit(this);

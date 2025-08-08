@@ -9,6 +9,8 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class TyBool extends TType {
@@ -16,7 +18,10 @@ public class TyBool extends TType {
     public boolean match(TType t) {
         return t instanceof TyBool;
     }
-
+    
+    public TyBool(Symbol start, Symbol end) {
+            super(sym.TYBOOL, start, end);
+    }
     @Override
     public void accept(Visitor v) {
         v.visit(this);

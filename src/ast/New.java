@@ -10,13 +10,17 @@
 package ast;
 
 import java.util.List;
+
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class New extends Exp {
     private TType type;
     private List<Exp> dimensions;
 
-    public New(TType type, List<Exp> dimensions) {
+    public New(Symbol start, Symbol end, TType type, List<Exp> dimensions) {
+        super(sym.NEW, start, end);
         this.type = type;
         this.dimensions = dimensions;
     }

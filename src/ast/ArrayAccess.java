@@ -9,13 +9,16 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 // acessa o vetor
 public class ArrayAccess extends LValue {
     private LValue array;  
     private Exp index;   
 
-    public ArrayAccess(LValue array, Exp index) {
+    public ArrayAccess(Symbol start, Symbol end, LValue array, Exp index) {
+        super(sym.ARRAYACCESS, start, end);
         this.array = array;
         this.index = index;
     }

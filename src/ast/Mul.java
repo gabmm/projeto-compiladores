@@ -8,12 +8,14 @@
  */
 
 package ast;
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class Mul extends BinOP {
 
-    public Mul(Exp l, Exp r){
-        super(l, r);
+    public Mul(Symbol start, Symbol end,Exp l, Exp r){
+        super(sym.MUL, start, end, l, r);
     }
 
     public String toString(){

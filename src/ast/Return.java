@@ -11,12 +11,15 @@ package ast;
 
 import visitors.Visitor;
 import java.util.List;
+import parser.sym;
+import beaver.Symbol;
 
 public class Return extends Cmd {  
 
     private List<Exp> exps;  
 
-    public Return(List<Exp> exps) {
+    public Return(Symbol start, Symbol end, List<Exp> exps) {
+        super(sym.RETURN, start, end);
         this.exps = exps;
     }
 

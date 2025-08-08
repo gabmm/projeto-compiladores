@@ -8,13 +8,15 @@
  */
 
 package ast;
+import beaver.Symbol;
 import visitors.Visitor;
- 
+import parser.sym;
 public class Print extends Cmd {
 
     private Exp e; 
 
-    public Print(Exp e){
+    public Print(Symbol start, Symbol end, Exp e){
+        super(sym.PRINT, start, end);
         this.e  = e;
     }
 

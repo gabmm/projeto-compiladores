@@ -9,12 +9,15 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class ItCondExp extends ItCond {
     private Exp cond;
 
-    public ItCondExp(Exp cond) {
+    public ItCondExp(Symbol start, Symbol end, Exp cond) {
+        super(sym.ITCONDEXP, start, end);
         this.cond = cond;
     }
 

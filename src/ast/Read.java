@@ -9,12 +9,14 @@
 
 package ast;
 
+import beaver.Symbol;
 import visitors.Visitor;
-
+import parser.sym;
 public class Read extends Cmd {
     private final LValue lvalue;
 
-    public Read(LValue lvalue) {
+    public Read(Symbol start, Symbol end, LValue lvalue) {
+        super(sym.READ, start, end);
         this.lvalue = lvalue;
     }
 

@@ -9,12 +9,16 @@
 
 package ast;
 import java.util.List;
+
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class Prog extends Node {
     private final List<Def> defs;
 
-    public Prog(List<Def> defs) {
+    public Prog(Symbol start, Symbol end, List<Def> defs) {
+        super(sym.PROG, start, end );
         this.defs = defs;
     }
 

@@ -10,12 +10,16 @@
 package ast;
 
 import java.util.List;
+
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class CmdList extends Cmd {
     private List<Cmd> commands;
 
-    public CmdList(List<Cmd> commands) {
+    public CmdList(Symbol start, Symbol end, List<Cmd> commands) {
+        super(sym.CMD_LIST, start, end);
         this.commands = commands;
     }
 

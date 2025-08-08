@@ -10,12 +10,16 @@
 package ast;
 
 import java.util.List;
+
+import beaver.Symbol;
 import visitors.Visitor;
+import parser.sym;
 
 public class Block extends Cmd {
     private List<Cmd> cmds;
 
-    public Block(List<Cmd> cmds) {
+    public Block(Symbol start, Symbol end, List<Cmd> cmds) {
+        super(sym.BLOCK, start, end); 
         this.cmds = cmds;
     }
 

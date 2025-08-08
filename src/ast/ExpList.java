@@ -10,12 +10,16 @@
 package ast;
 
 import java.util.List;
+
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class ExpList extends Node {
     private List<Exp> expressions;
 
-    public ExpList(List<Exp> expressions) {
+    public ExpList(Symbol start, Symbol end,List<Exp> expressions) {
+        super(sym.EXP_LIST, start, end);
         this.expressions = expressions;
     }
 

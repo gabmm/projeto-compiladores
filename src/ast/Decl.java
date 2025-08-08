@@ -9,13 +9,16 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class Decl extends Def{
     private TType type;
-
-    public Decl(String id, TType type) {
-        super (id);
+    private String id;
+    public Decl(Symbol start, Symbol end, String id, TType type) {
+        super (sym.DECL, start, end);
+        this.id = id;
         this.type = type;
     }
 

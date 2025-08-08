@@ -9,13 +9,16 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class Dot extends LValue {
     private LValue base;
     private String field;
 
-    public Dot(LValue base, String field) {
+    public Dot(Symbol start, Symbol end, LValue base, String field) {
+        super(sym.DOT, start, end);
         this.base = base;
         this.field = field;
     }

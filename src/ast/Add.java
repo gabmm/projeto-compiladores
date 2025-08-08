@@ -9,19 +9,21 @@
 
 package ast;
 import visitors.Visitor;
+import beaver.Symbol;
+import parser.Terminals;
 
 public class Add extends BinOP {
 
     public Add(Exp l, Exp r){
         super(l, r);
     }
-
+    public Add(Symbol start, Symbol end, Exp l, Exp r) {
+        super(Terminals.PLUS, start, end, l, r);
+    }
     @Override
     public String toString(){
-        //TO DO
         return "(" + getLeft().toString() + " + " + getRight().toString() + ")";
     }
 
-    public void accept(Visitor v){v.visit(this);}  //todas classes concretas precisam do accept
-
+    public void accept(Visitor v){v.visit(this);} 
 }

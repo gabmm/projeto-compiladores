@@ -10,6 +10,9 @@
 package ast;
 
 import java.util.List;
+
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 // usada como expressão: x = f(5);
 public class Call extends Exp {
@@ -17,7 +20,8 @@ public class Call extends Exp {
     private List<Exp> args;
     private Exp index;
 
-    public Call(String funcName, List<Exp> args, Exp index) {
+    public Call(Symbol start, Symbol end, String funcName, List<Exp> args, Exp index) {
+        super(sym.CALL, start, end);
         this.funcName = funcName;
         this.args = args;
         this.index = index; 

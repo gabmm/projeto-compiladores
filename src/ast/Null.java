@@ -9,13 +9,18 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class Null extends Exp {
     public void accept(Visitor v) {
         v.visit(this);
     }
+    public Null(Symbol start, Symbol end){
+        super(sym.NULL, start, end);
 
+    }
     public String toString() {
         return "null";
     }

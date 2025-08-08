@@ -8,12 +8,14 @@
  */
 
 package ast;
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class Eq extends BinOP {
 
-    public Eq(Exp l, Exp r){
-        super(l, r);
+    public Eq(Symbol start, Symbol end,Exp l, Exp r){
+        super(sym.EQ, start, end, l, r);
     }
 
     public String toString(){

@@ -9,13 +9,16 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public class NInt extends Exp {
 
     private int value;
 
-    public NInt(int value){
+    public NInt(Symbol start, Symbol end,int value){
+        super(sym.NINT, start, end);
         this.value = value;
     }
 

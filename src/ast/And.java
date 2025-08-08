@@ -9,11 +9,12 @@
 
 package ast;
 import visitors.Visitor;
-
+import beaver.Symbol;
+import parser.sym;
 public class And extends BinOP {
 
-    public And(Exp l, Exp r){
-        super(l, r);
+    public And(Symbol start, Symbol end, Exp l, Exp r){
+        super(sym.AND, start, end, l, r);
     }
 
     public String toString(){

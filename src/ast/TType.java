@@ -9,11 +9,15 @@
 
 package ast;
 
+import beaver.Symbol;
+import parser.sym;
 import visitors.Visitor;
 
 public abstract class TType extends Node {
     
-    public TType(){}
+    public TType(short id, Symbol start, Symbol end){
+        super(id, start, end);
+    }
 
     public abstract boolean match(TType t);
     public abstract void accept(Visitor v);

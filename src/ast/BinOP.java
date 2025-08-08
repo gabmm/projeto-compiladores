@@ -8,6 +8,7 @@
  */
 
 package ast;
+import beaver.Symbol;
 
 public abstract class BinOP extends Exp {
 
@@ -15,10 +16,15 @@ public abstract class BinOP extends Exp {
     private Exp r;
 
     public BinOP(Exp l, Exp r){
+        super();
         this.l = l;
         this.r = r;
     }
-
+    public BinOP(short id, Symbol start, Symbol end, Exp left, Exp right) {
+            super(id, start, end);
+            this.l = left;
+            this.r = right;
+    }
     public void setLeft(Exp n){
         this.l = n;
     }

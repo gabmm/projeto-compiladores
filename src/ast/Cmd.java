@@ -10,7 +10,10 @@
 package ast;
 
 import visitors.Visitor;
-
+import beaver.Symbol;
 public abstract class Cmd extends Node {
+    public Cmd(short id, Symbol start, Symbol end) {
+        super(id, start, end);
+    }
     public abstract void accept(Visitor v);
 }

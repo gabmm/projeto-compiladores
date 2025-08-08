@@ -10,13 +10,16 @@
 package ast;
 
 import visitors.Visitor;
+import beaver.Symbol;
+import parser.Terminals;
 
 public class If extends Cmd {
     private Exp condition;
     private Cmd thenCmd;
     private Cmd elseCmd; 
 
-    public If(Exp condition, Cmd thenCmd, Cmd elseCmd) {
+    public If(Symbol start, Symbol end, Exp condition, Cmd thenCmd, Cmd elseCmd) {
+        super(Terminals.IF, start, end);
         this.condition = condition;
         this.thenCmd = thenCmd;
         this.elseCmd = elseCmd;
