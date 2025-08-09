@@ -12,6 +12,12 @@ import org.stringtemplate.v4.STGroupFile;
 
 import ast.*;
 import langUtil.LocalEnv;
+import langUtil.STyArr;
+import langUtil.STyBool;
+import langUtil.STyChar;
+import langUtil.STyData;
+import langUtil.STyFloat;
+import langUtil.STyInt;
 import langUtil.SType;
 import langUtil.TyEnv;
 
@@ -19,15 +25,18 @@ public class JasminVisitor extends Visitor {
 
     private STGroup groupTemplate;
     private ST type, cmd, exp;
-    private List<ST> funs, params, datas, block;
+    private List<ST> funs, params, datas;
+    private ST block;
     private TyEnv<LocalEnv<SType>> envs;
     private LocalEnv<SType> localType;
     private LocalEnv<Integer> localMap;
     private ArrayList<String> jasminProgram;
     private TyEnv<LocalEnv<Integer>> jEnvs;
+    private TypeCheckerVisitor typeChecker;
     private int ltLabel = 0, eqLabel = 0, neqLabel = 0, itLabel = 0, ifLabel = 0;
 
-    public JasminVisitor(TyEnv<LocalEnv<SType>> envs) {
+    public JasminVisitor(TypeCheckerVisitor tc, TyEnv<LocalEnv<SType>> envs) {
+        this.typeChecker = tc;
         this.envs = envs;
         this.groupTemplate = new STGroupFile("./template/jasmin.stg");
         this.jasminProgram = new ArrayList<String>();
@@ -64,14 +73,118 @@ public class JasminVisitor extends Visitor {
         ST prog = groupTemplate.getInstanceOf("program");
 
         funs = new ArrayList<ST>();
+        datas = new ArrayList<ST>();
+
         for (Def def : node.getDefs()) {
-            def.accept(this);
+            if (def instanceof Data) {
+                def.accept(this);
+            }
+            else if (def instanceof Fun){
+                def.accept(this);
+            }
+            
         }
 
         prog.add("funs", funs);
+        prog.add("datas", datas);
         jasminProgram.add(prog.render());
     }
 
+    @Override
+    public void visit(Fun node) {
+        ST fun = groupTemplate.getInstanceOf("fun");
+        fun.add("name", node.getName());
+
+        updateLocalEnv(node.getName());
+        LinkedHashMap<String, SType> envVars = this.localType.getEnv();
+
+        fun.add("stack_max", "10");
+        fun.add("env_vars_qtd", envVars.size());
+
+
+        if (node.getType().size() > 0) { // aqui será array de Objects
+            node.getType().get(0).accept(this);
+            fun.add("return", type);
+        } else {
+            fun.add("return", "V");
+        }
+
+        params = new ArrayList<ST>();
+        for (Param p : node.getParams()) {
+            p.getType().accept(this);
+            params.add(type);
+        }
+
+        fun.add("params", params);
+
+        node.getBody().accept(this);
+
+        fun.add("block", block);
+
+        funs.add(fun);
+    }
+     @Override
+    public void visit (Data node){
+        ST data = groupTemplate.getInstanceOf("data");
+        String className = "ProgramaLang$" + node.getName();
+        data.add("name", className);
+        STyData dataType = this.typeChecker.getDataDefs().get(node.getName());
+        for (String fieldName : dataType.getFields().keySet()) {
+            ST fieldTemplate = groupTemplate.getInstanceOf("field_def");
+            SType fieldType = dataType.getFields().get(fieldName);
+            
+            fieldTemplate.add("name", fieldName);
+            fieldTemplate.add("type_descriptor", mapTypeToDescriptor(fieldType));
+            
+            data.add("fields", fieldTemplate.render());
+        }
+        datas.add(data);
+    }
+    private String mapTypeToDescriptor(SType type) {
+        if (type instanceof langUtil.STyInt) return "I";
+        if (type instanceof langUtil.STyFloat) return "F";
+        if (type instanceof langUtil.STyBool) return "Z";
+        if (type instanceof langUtil.STyChar) return "C";
+        if (type instanceof langUtil.STyData) return "LProgramaLang$" + ((langUtil.STyData) type).getID() + ";";
+        if (type instanceof langUtil.STyArr) return "[" + mapTypeToDescriptor(((langUtil.STyArr) type).getType());
+        return "Ljava/lang/Object;";
+    }
+
+    @Override
+    public void visit(Dot node) {
+
+        STyData baseType = (STyData) typeChecker.typeOf(node.getBase());
+        SType fieldType = baseType.getFieldType(node.getField());
+        ST getFieldTpl = groupTemplate.getInstanceOf("get_field");
+        
+        getFieldTpl.add("class_name", "ProgramaLang$" + baseType.getID());
+        getFieldTpl.add("field_name", node.getField());
+        getFieldTpl.add("type_descriptor", mapTypeToDescriptor(fieldType));
+        
+        node.getBase().accept(this);
+        getFieldTpl.add("base_obj", exp);
+
+        this.exp = getFieldTpl;
+    }
+     
+    @Override
+    public void visit (ArrayAccess node){
+        STyArr arrayType = (STyArr) typeChecker.typeOf(node.getArray());
+        SType elementType = arrayType.getType();
+        ST arrayLoadTpl = groupTemplate.getInstanceOf("array_load");
+        if (elementType instanceof STyInt || elementType instanceof STyBool || elementType instanceof STyChar) {
+                arrayLoadTpl.add("instruction", "iaload"); 
+            } else if (elementType instanceof STyFloat) {
+                arrayLoadTpl.add("instruction", "faload"); 
+            } else { 
+                arrayLoadTpl.add("instruction", "aaload"); 
+            }
+            node.getArray().accept(this);
+            arrayLoadTpl.add("array_ref", exp);
+            node.getIndex().accept(this);
+            arrayLoadTpl.add("index_exp", exp);
+            this.exp = arrayLoadTpl;
+    }
     private void visitBinaryExpr(String op, Exp left, Exp right) {
         ST binExp = groupTemplate.getInstanceOf("binary_exp");
         binExp.add("op", op);
@@ -140,44 +253,23 @@ public class JasminVisitor extends Visitor {
     @Override
     public void visit(Var node) {
         ST varExp = groupTemplate.getInstanceOf("var_access");
-        int varNum = this.localMap.get(node.getName());
+        String varName = node.getName();
+        int varNum = this.localMap.get(varName);
         varExp.add("num", varNum);
-        this.exp = varExp;
+        SType varType = this.localType.get(varName);
+        String instruction;
+        if (varType instanceof STyInt || varType instanceof STyBool || varType instanceof STyChar) {
+            instruction = "iload"; 
+        } else if (varType instanceof STyFloat) {
+            instruction = "fload"; 
+        } else { 
+            instruction = "aload"; 
+        }
+        varExp.add("instruction", instruction);
+            this.exp = varExp;
     }
 
-    @Override
-    public void visit(Fun node) {
-        ST fun = groupTemplate.getInstanceOf("fun");
-        fun.add("name", node.getName());
-
-        updateLocalEnv(node.getName());
-        LinkedHashMap<String, SType> envVars = this.localType.getEnv();
-
-        fun.add("stack_max", "10");
-        fun.add("env_vars_qtd", envVars.size());
-
-
-        if (node.getType().size() > 0) { // aqui será array de Objects
-            node.getType().get(0).accept(this);
-            fun.add("return", type);
-        } else {
-            fun.add("return", "V");
-        }
-
-        params = new ArrayList<ST>();
-        for (Param p : node.getParams()) {
-            p.getType().accept(this);
-            params.add(type);
-        }
-
-        fun.add("params", params);
-
-        node.getBody().accept(this);
-
-        fun.add("block", block);
-
-        funs.add(fun);
-    }
+    
 
     @Override
     public void visit(NBool node) {
@@ -256,12 +348,12 @@ public class JasminVisitor extends Visitor {
 
     @Override
     public void visit(Block node) {
-        ArrayList<ST> cmds = new ArrayList<ST>();
+        ST blockTemplate = groupTemplate.getInstanceOf("block");
         for (Cmd cmd : node.getCmds()) {
-            cmd.accept(this);
-            cmds.add(this.cmd);
+            cmd.accept(this); 
+            blockTemplate.add("commands", this.cmd); 
         }
-        block = cmds;
+        this.block = blockTemplate;
     }
 
     @Override
@@ -312,17 +404,68 @@ public class JasminVisitor extends Visitor {
          * Lembre-se: não existe variavel não declarada! o lado esquerdo sempre estará
          * no localMap so preciso buscar o Int mapeado pro nome da var
          */
+        LValue lhs = node.getLhs();
+        if(lhs instanceof Var){
+            ST assignCmd = groupTemplate.getInstanceOf("assign_cmd");
+            String varName = ((Var) lhs).getName();
+            int varNum = this.localMap.get(varName);
+            assignCmd.add("var_num", varNum);
+            SType varType = this.localType.get(varName);
+            String instruction;
+            if (varType instanceof STyInt || varType instanceof STyBool || varType instanceof STyChar) {
+                instruction = "istore"; 
+            } else if (varType instanceof STyFloat) {
+                instruction = "fstore"; 
+            } else { 
+                instruction = "astore"; 
+            }
+            assignCmd.add("instruction", instruction);
+            node.getRhs().accept(this);
+            assignCmd.add("exp", exp);
+            this.cmd = assignCmd;
+        } else if(lhs instanceof Dot){
+            Dot dot = (Dot) lhs;
+            ST field = groupTemplate.getInstanceOf("put_field");
+            STyData baseType = (STyData) typeChecker.typeOf(dot.getBase());
+            SType fieldType = baseType.getFieldType(dot.getField());
+            field.add("class_name", "ProgramaLang$" + baseType.getID());
+            field.add("field_name", dot.getField());
+            field.add("type_descriptor", mapTypeToDescriptor(fieldType));
+            dot.getBase().accept(this);
+            field.add("base_obj", exp);
+            node.getRhs().accept(this);
+            field.add("value_exp", exp);
+            this.cmd = field;
+        }else if (lhs instanceof ArrayAccess) {
+            ArrayAccess accessNode = (ArrayAccess) lhs;
+            accessNode.getArray().accept(typeChecker);
+            STyArr arrayType = (STyArr) typeChecker.getOperands().pop();
+            SType elementType = arrayType.getType();
 
-        ST assignCmd = groupTemplate.getInstanceOf("assign_cmd");
-        int varNum = this.localMap.get(((Var) node.getLhs()).getName());
-        assignCmd.add("var_num", varNum);
-        node.getRhs().accept(this);
-        assignCmd.add("exp", exp);
-        this.cmd = assignCmd;
+            ST arrayStoreTpl = groupTemplate.getInstanceOf("array_store");
+
+            if (elementType instanceof STyInt || elementType instanceof STyBool || elementType instanceof STyChar) {
+                arrayStoreTpl.add("instruction", "iastore");
+            } else if (elementType instanceof STyFloat) {
+                arrayStoreTpl.add("instruction", "fastore");
+            } else {
+                arrayStoreTpl.add("instruction", "aastore");
+            }
+
+            accessNode.getArray().accept(this);
+            arrayStoreTpl.add("array_ref", exp);
+
+            accessNode.getIndex().accept(this);
+            arrayStoreTpl.add("index_exp", exp);
+            
+            node.getRhs().accept(this);
+            arrayStoreTpl.add("value_exp", exp);
+
+            this.cmd = arrayStoreTpl;
+        }
+        
     }
 
-    @Override
-    public void visit (ArrayAccess node){}
 
     @Override
     public void visit (Call node){}
@@ -334,7 +477,38 @@ public class JasminVisitor extends Visitor {
     public void visit (Null node){}
 
     @Override
-    public void visit (New node){}
+    public void visit (New node){
+        SType creationType = typeChecker.typeOf(node);
+
+        if (creationType instanceof STyData) {
+            STyData dataType = (STyData) creationType;
+            ST newObjectTpl = groupTemplate.getInstanceOf("new_object");
+            
+            String className = "ProgramaLang$" + dataType.getID();
+            newObjectTpl.add("class_name", className);
+            
+            this.exp = newObjectTpl;
+        }
+        else if (creationType instanceof STyArr) {
+            STyArr arrayType = (STyArr) creationType;
+            SType elementType = arrayType.getType(); 
+            
+            ST newArrayTpl = groupTemplate.getInstanceOf("new_array");
+
+            node.getDimensions().get(0).accept(this);
+            newArrayTpl.add("size_exp", this.exp);
+
+            if (elementType instanceof STyInt || elementType instanceof STyBool || elementType instanceof STyChar) {
+                newArrayTpl.add("array_instruction", "newarray int");
+            } else if (elementType instanceof STyFloat) {
+                newArrayTpl.add("array_instruction", "newarray float");
+            } else {
+                newArrayTpl.add("array_instruction", "anewarray " + mapTypeToDescriptor(elementType));
+            }
+            
+            this.exp = newArrayTpl;
+        }
+    }
 
     @Override
     public void visit (CmdList node){}
@@ -342,8 +516,7 @@ public class JasminVisitor extends Visitor {
     @Override
     public void visit (Decl node){}
 
-    @Override
-    public void visit (Data node){}
+   
 
     @Override
     public void visit (ExpList node){}
@@ -394,8 +567,7 @@ public class JasminVisitor extends Visitor {
         visitBinaryExpr("irem", node.getLeft(), node.getRight());
     }
 
-    @Override
-    public void visit(Dot node){}
+
 
     @Override
     public void visit(Read node){}

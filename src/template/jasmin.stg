@@ -1,10 +1,11 @@
 group jasmin;
 
-program(funs) ::= <<
+program(funs, datas) ::= <<
 .class public ProgramaLang
 .super java/lang/Object
 
     <funs; separator="\n\n">
+    <datas; separator="\n\n">
 
     .method public static main([Ljava/lang/String;)V
         .limit stack 1
@@ -21,20 +22,77 @@ fun(return, name, params, env_vars_qtd, stack_max, block) ::= <<
 .end method
 >>
 
+data(name, fields) ::= <<
+.class public <name>
+.super java/lang/Object
+
+<fields; separator="\n">
+
+.method public \<init\>()V
+.limit stack 1
+.limit locals 1
+aload_0
+invokespecial java/lang/Object/\<init\>()V
+return
+.end method
+>>
+
+field_def(name, type_descriptor) ::= <<
+.field public <name> <type_descriptor>
+>>
+
+put_field(base_obj, value_exp, class_name, field_name, type_descriptor) ::= <<
+<base_obj>
+<value_exp>
+putfield <class_name>/<field_name> <type_descriptor>
+>>
+
+get_field(base_obj, class_name, field_name, type_descriptor) ::= <<
+<base_obj>
+getfield <class_name>/<field_name> <type_descriptor>
+>>
+
+array_load(array_ref, index_exp, instruction) ::= <<
+<array_ref>
+<index_exp>
+<instruction>
+>>
+
+array_store(array_ref, index_exp, value_exp, instruction) ::= <<
+<array_ref>
+<index_exp>
+<value_exp>
+<instruction>
+>>
+
 block(commands) ::= <<
 <commands; separator="\n">
 >>
+
+new_object(class_name) ::= <<
+new <class_name>
+dup
+invokespecial <class_name>/\<init\>()V
+>>
+
+new_array(size_exp, array_instruction) ::= <<
+<size_exp>
+<array_instruction>
+>>
+
 
 array_type(type) ::= "[<type>"
 int_type() ::= "I"
 float_type() ::= "F"
 boolean_type() ::= "Z"
 
-iprint(exp) ::= <<
 
+
+iprint(exp) ::= <<
 getstatic java/lang/System/out Ljava/io/PrintStream;
 <exp>
 invokevirtual java/io/PrintStream/println(I)V
+
 >>
 
 ireturn(exp) ::= <<
@@ -89,10 +147,9 @@ call(class, name, type, return, args) ::= <<
 invokestatic <class>/<name>(<type>)<return>
 >>
 
-assign_cmd(var_num, exp) ::= <<
+assign_cmd(exp, instruction, var_num) ::= <<
 <exp>
-istore <var_num>
-
+<instruction> <var_num>
 >>
 
 iastore(num, index, exp) ::= <<
@@ -102,7 +159,9 @@ aload <num>
 iastore
 >>
 
-var_access(num) ::= "iload <num>"
+var_access(instruction, num) ::= <<
+<instruction> <num>
+>>
 
 iaaccess(num, exp) ::= <<
 aload <num>
@@ -167,7 +226,18 @@ neg_neg(exp) ::= <<
 ineg
 >>
 
-boolean_true() ::= "iconst_1"
-boolean_false() ::= "iconst_0"
-float_exp(value) ::= "ldc <value>"
-int_exp(value) ::= "sipush <value>"
+boolean_true() ::= <<
+iconst_1
+>>
+
+boolean_false() ::= <<
+iconst_0
+>>
+
+float_exp(value) ::= <<
+ldc <value>
+>>
+
+int_exp(value) ::= <<
+sipush <value>
+>>
