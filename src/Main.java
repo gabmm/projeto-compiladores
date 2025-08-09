@@ -73,7 +73,7 @@ public class Main {
                     TypeCheckerVisitor tJasmin = new TypeCheckerVisitor();
                     programNode.accept(tJasmin);
                     tJasmin.printErrors();
-                    JasminVisitor jasv = new JasminVisitor(tJasmin.getEnvs());
+                    JasminVisitor jasv = new JasminVisitor(tJasmin, tJasmin.getEnvs());
                     programNode.accept(jasv);
                     jasv.printProg();
                     break;
