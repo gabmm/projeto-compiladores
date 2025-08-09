@@ -22,6 +22,7 @@ import java.util.Scanner;
 /* TODO:
  * Retorno da call tem que criar variável caso n exista
  * n pode chorar quando funcao sem retorno n tiver return
+ * CONSERTAR READ
  */
 
 public class TypeCheckerVisitor extends Visitor {
