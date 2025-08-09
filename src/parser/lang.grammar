@@ -92,9 +92,9 @@ data
       java.util.List<ast.Fun> funs = new java.util.ArrayList<>();
       for (ast.Def def : dfl) {
           if (def instanceof ast.Decl)
-              decls.add((ast.Decl) def.value);
+              decls.add((ast.Decl) def);
           else if (def instanceof ast.Fun)
-              funs.add((ast.Fun) def.value);
+              funs.add((ast.Fun) def);
       }
         ast.Data dataNode = new ast.Data(abs, rb, name, true, decls, funs);
         return new Symbol(sym.DATA, dataNode);
@@ -102,8 +102,7 @@ data
     | DATA.dt TYID.id LBRACE decl_list.dl RBRACE.rb
     {: 
       String name = (String)id.value;
-      java.util.List<ast.Decl> decls = (java.util.List<ast.Decl>) dl;
-      ast.Data dataNode = new ast.Data(dt, rb, name, decls);
+      ast.Data dataNode = new ast.Data(dt, rb, name, dl);
       return new Symbol(sym.DATA, dataNode);
     :}
 
@@ -124,8 +123,8 @@ decl_fun_list
 ;
 
 decl_or_fun
-  = decl.d {: return new Symbol(sym.DECL_OR_FUN, d); :}
-  | fun.f  {: return new Symbol(sym.DECL_OR_FUN, f); :}
+  = decl.d {: return new Symbol(sym.DECL_OR_FUN, d.value); :}
+  | fun.f  {: return new Symbol(sym.DECL_OR_FUN, f.value); :}
 ;
 
 decl_list
