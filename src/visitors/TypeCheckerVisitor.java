@@ -430,9 +430,9 @@ public class TypeCheckerVisitor extends Visitor {
 
     @Override
     public void visit(New node) {
-        if (node.getDimensions().size() > 1) {
+        if (node.getDimensions().size() > 0) {
             TType bType = node.getType();
-            for (int i = 0; i < node.getDimensions().size() - 1; i++) {
+            for (int i = 0; i < node.getDimensions().size(); i++) {
                 TTypeArray aType = new TTypeArray(bType);
                 bType = aType;
             }
