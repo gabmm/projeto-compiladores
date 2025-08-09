@@ -17,7 +17,7 @@ public class Decl extends Def{
     private TType type;
     private String id;
     public Decl(Symbol start, Symbol end, String id, TType type) {
-        super (sym.DECL, start, end);
+        super(sym.DECL, start, end, id);
         this.id = id;
         this.type = type;
     }

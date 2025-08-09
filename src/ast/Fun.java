@@ -28,7 +28,7 @@ public class Fun extends Def {
         this.body = body;
     }
     public Fun(Symbol start, Symbol end, String name, List<TType> type, List<Param> params, Cmd body) {
-        super(sym.FUN, start, end);
+        super(sym.FUN, start, end, name);
         this.name = name;
         this.type = type;
         this.params = params;

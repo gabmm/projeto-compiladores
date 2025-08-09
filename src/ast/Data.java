@@ -23,25 +23,28 @@ public class Data extends Def {
 
     public Data(String name, boolean isAbstract, List<Decl> decls, List<Fun> funs) {
         super(name);
+        this.name = name;
         this.isAbstract = isAbstract;
         this.decls = decls;
         this.funs = funs;
     }
 
     public Data(Symbol start, Symbol end, String name, boolean isAbstract, List<Decl> decls, List<Fun> funs) {
-        super(Terminals.ABSTRACT, start, end);
+        super(Terminals.ABSTRACT, start, end, name);
         this.name = name;
         this.isAbstract = isAbstract;
         this.decls = decls;
         this.funs = funs;
     }
+
     public Data(Symbol start, Symbol end, String name, List<Decl> decls) {
-            super(Terminals.DATA, start, end);
+        super(Terminals.DATA, start, end, name);
             this.name = name;
             this.isAbstract = false; 
             this.decls = decls;
             this.funs = new ArrayList<>();
         }
+
     public boolean isAbstract() {
         return isAbstract;
     }
