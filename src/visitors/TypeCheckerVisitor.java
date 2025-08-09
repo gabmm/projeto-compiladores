@@ -55,10 +55,20 @@ public class TypeCheckerVisitor extends Visitor {
     private boolean leftSided;
     private boolean isDeclarationPhase;
 
+
+    public LinkedHashMap<String, STyData> getDataDefs() {
+        return this.dataDefs;
+    }
+    public operandControler<SType> getOperands() {
+        return this.operands;
+    }
     public TyEnv<LocalEnv<SType>> getEnvs() {
         return this.envs;
     }
-
+    public SType typeOf(Exp node) {
+        node.accept(this);
+        return operands.pop();
+    }
     public String getColAndLine(Node node) {
         return node.getLine() + ", " + node.getCol() + ": ";
     }
