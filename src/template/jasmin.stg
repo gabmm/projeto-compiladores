@@ -100,26 +100,40 @@ ireturn(exp) ::= <<
 ireturn
 >>
 
-iterate_cond_exp(label, exp, body) ::= <<
+
+iterate_cond_int(label, id, itr, body) ::= <<
+<id>
+istore_<itr>
 #<label>:
-<exp>
-ifeq #<label>#end
+iload_<itr>
+ifle #<label>#end:
 <body>
+iload_<itr>
+iconst_1
+isub
+istore_<itr>
 goto #<label>
 #<label>#end:
 nop
 >>
 
-iterate_cond_id(label, id, exp, body) ::= <<
-#<label>:
-<exp>
+iterate_cond_array(label, id, body, itr) ::= <<
 <id>
-isub
-ifgt #<label>#end
-<body>
-<id>
+arraylength
 iconst_1
-iadd
+isub
+istore_<itr>
+#<label>:
+iload_<itr>
+ifle #<label>#end:
+<id>
+iload<itr>
+aload
+<body>
+iload_<itr>
+iconst_1
+isub
+istore_<itr>
 goto #<label>
 #<label>#end:
 nop
@@ -149,7 +163,7 @@ invokestatic <class>/<name>(<type>)<return>
 
 assign_cmd(exp, instruction, var_num) ::= <<
 <exp>
-<instruction> <var_num>
+<instruction>_<var_num>
 >>
 
 iastore(num, index, exp) ::= <<
@@ -160,7 +174,7 @@ iastore
 >>
 
 var_access(instruction, num) ::= <<
-<instruction> <num>
+<instruction>_<num>
 >>
 
 iaaccess(num, exp) ::= <<

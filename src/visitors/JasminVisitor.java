@@ -360,32 +360,72 @@ public class JasminVisitor extends Visitor {
     public void visit(Cmd node){}
 
     @Override
-    public void visit (ItCondId node){}
+    public void visit(ItCondId node) {
+        node.getCond().accept(this);
+    }
 
     @Override
-    public void visit (ItCond node){}
+    public void visit(ItCond node) {
+    }
 
     @Override
-    public void visit (ItCondExp node){}
+    public void visit(ItCondExp node) {
+        node.getCond().accept(this);
+    }
 
     @Override
     public void visit(Iterate node) {
-        ST iterateCmd;
-        if (node.getCondition() instanceof ItCondExp) {
-            iterateCmd = groupTemplate.getInstanceOf("iterate_cond_exp");
-            iterateCmd.add("label", "it" + itLabel++);
-            node.getCondition().accept(this);
-            iterateCmd.add("exp", this.exp);
-            if (node.getBody() instanceof Block) {
-                node.getBody().accept(this);
-                iterateCmd.add("body", this.block);
-            } else {
-                node.getBody().accept(this);
-                iterateCmd.add("body", this.cmd);
-            }
-        } else {
 
+        /*
+         * copiar o localMap se for itcondid colocar a variavel nova no localMap depois
+         * reestabelecer o localMap ao terminar isso funciona pra iterate aninhado??
+         * 
+         * quando for itcondid array, preciso ver o tipo da exp se for Var, eu ja olho
+         * no localType se é STyArr Mas se for Dot ou ArrayAccess? visito os nós!
+         * 
+         * ainda nao sei como saber se a exp vai resultar em um array ou nao
+         */
+
+        ST iterateCmd;
+        int varNum = localMap.getEnv().size();
+        node.getCondition().accept(this); // a EXP é igual pra todos casos, tá armazenada no this.exp
+
+        if (node.getCondition() instanceof ItCondExp) {
+            iterateCmd = groupTemplate.getInstanceOf("iterate_cond_int");
+            iterateCmd.add("id", this.exp);
+            iterateCmd.add("itr", varNum);
+        } else {
+            String idName = ((ItCondId) node.getCondition()).getID();
+            if (localMap.hasKey(idName)) {
+                varNum = localMap.get(idName);
+            } else {
+
+            }
+            System.out.println(localType.get(idName).toString());
+            // se vai iterar sobre o length de um array
+            if (localType.get(idName) instanceof STyArr) {
+                iterateCmd = groupTemplate.getInstanceOf("iterate_cond_array");
+                iterateCmd.add("id", this.exp);
+                iterateCmd.add("itr", varNum);
+
+                // se vai iterar sobre um inteiro
+            } else {
+                iterateCmd = groupTemplate.getInstanceOf("iterate_cond_int");
+                iterateCmd.add("id", this.exp);
+                iterateCmd.add("itr", varNum);
+            }
         }
+
+        iterateCmd.add("label", "it" + itLabel++);
+
+        node.getBody().accept(this); // block tbm é igual pra todo mundo, vai estar no this.block ou no this.cmd
+        if (node.getBody() instanceof Block) {
+            iterateCmd.add("body", this.block);
+        } else {
+            iterateCmd.add("body", this.cmd);
+        }
+
+        this.cmd = iterateCmd;
     }
 
     @Override
