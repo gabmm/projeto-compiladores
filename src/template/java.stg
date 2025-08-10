@@ -1,12 +1,11 @@
 group java;
 
 program(data_defs, fun_defs) ::= <<
-
-<data_defs; separator="\n\n">
-
 public class ProgramaLang {
+    <data_defs; separator="\n\n">
+
     <fun_defs; separator="\n\n">
-  
+    
     public static void main(String args[]) {
         _main();
     }
@@ -21,11 +20,11 @@ public static <ret_type> <name>(<params; separator=", ">) {
 }
 >>
 
-data_def(name, fields, funs) ::= <<
-    public class <name> {
+data_def(name, fields) ::= <<
+    class <name> {
         <fields; separator="\n">
-        \n
-        <if(funs)><funs; separator="\n\n"><endif>
+        public <name>() {
+        }
     }
 >>
 
@@ -70,13 +69,14 @@ block(commands) ::= <<
 <commands; separator="\n">
 >>
 
-declare_assign_stmt(type, lhs, rhs) ::= "<type> <lhs> = <rhs>;"
+declare_assign_stmt(type, lhs, rhs) ::= "<type> <lhs> = <rhs>"
 
 assign_stmt(lhs, rhs) ::= "<lhs> = <rhs>"
 
 
 lvalue(name, array) ::= "<name><array>"
-array_access(expr) ::= "[<expr>]"
+array_access(base, index) ::= "<base>[<index>]"
+assign_array_stmt(lhs, rhs) ::= "<lhs> = <rhs>;"
 
 boolean_expr(value) ::= "<value>"
 float_expr(value) ::= "<value>"
@@ -100,4 +100,4 @@ neg_expr(expr) ::= "((-1)*(<expr>))"
 
 new_obj_expr(type) ::= "new <type>()"
 new_array_expr(type, size) ::= "new <type>[<size>]"
-call_stmt(call_expr) ::= "<call_expr>;"
+call_stmt(call_expr) ::= "<call_expr>"

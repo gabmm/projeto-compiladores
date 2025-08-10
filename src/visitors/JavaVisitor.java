@@ -302,10 +302,8 @@ public class JavaVisitor extends Visitor {
     public void visit (Assign node){
         node.getRhs().accept(this);
         ST rhs = this.exp;
-
         node.getLhs().accept(this); 
         ST lhs = this.exp;
-
         ST assign_cmd = groupTemplate.getInstanceOf("assign_stmt");
         assign_cmd.add("lhs", lhs);
         assign_cmd.add("rhs", rhs);
@@ -313,7 +311,18 @@ public class JavaVisitor extends Visitor {
     }
 
     @Override
-    public void visit (ArrayAccess node){}
+    public void visit (ArrayAccess node){
+        node.getArray().accept(this);
+        ST base = this.exp;
+
+        node.getIndex().accept(this);
+        ST index = this.exp;
+
+        ST arrayAccess = groupTemplate.getInstanceOf("array_access");
+        arrayAccess.add("base", base);
+        arrayAccess.add("index", index);
+        this.exp = arrayAccess;
+    }
 
     @Override
     public void visit (Call node){
