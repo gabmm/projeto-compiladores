@@ -198,24 +198,33 @@ public class JasminVisitor extends Visitor {
         this.exp = binExp;
     }
 
+    private String checkType(Exp node) {
+        SType t = typeChecker.typeOf(node);
+        if (t instanceof STyInt) {
+            return "i";
+        } else {
+            return "f";
+        }
+    }
+
     @Override
     public void visit(Mul node) {
-        visitBinaryExpr("imul", node.getLeft(), node.getRight());
+        visitBinaryExpr(checkType(node) + "mul", node.getLeft(), node.getRight());
     }
 
     @Override
     public void visit(Div node) {
-        visitBinaryExpr("imod", node.getLeft(), node.getRight());
+        visitBinaryExpr(checkType(node) + "mod", node.getLeft(), node.getRight());
     }
 
     @Override
     public void visit(Sub node) {
-        visitBinaryExpr("isub", node.getLeft(), node.getRight());
+        visitBinaryExpr(checkType(node) + "sub", node.getLeft(), node.getRight());
     }
 
     @Override
     public void visit(Add node) {
-        visitBinaryExpr("iadd", node.getLeft(), node.getRight());
+        visitBinaryExpr(checkType(node) + "add", node.getLeft(), node.getRight());
     }
 
     @Override
@@ -536,15 +545,111 @@ public class JasminVisitor extends Visitor {
         
     }
 
+    @Override
+    public void visit(Call node) {
+        ST callExp = groupTemplate.getInstanceOf("call");
+
+        // nome da funcao
+        callExp.add("name", localType.getFunctionID());
+
+        // parâmetros
+        ArrayList<ST> args = new ArrayList<ST>();
+        String argTypes = "";
+        for (Exp e : node.getArgs()) {
+            e.accept(this);
+            args.add(this.exp);
+            argTypes += mapTypeToDescriptor(typeChecker.typeOf(e));
+        }
+
+        callExp.add("args", args);
+        callExp.add("arg_types", argTypes);
+
+        // assinatura do retorno
+        if (((STyFun) localType.getType()).getReturns().length > 0) {
+            callExp.add("return", "[Ljava/lang/Object;");
+        } else {
+            callExp.add("return", "V");
+            return;
+        }
+
+        /*
+         * Até esse ponto, Call e CallStmt são iguais. O retorno é um vetor e está no
+         * topo da pilha Para call, devemos montar um acesso a vetor usando o índice do
+         * nó call Para call Stmt, devemos iterar o vetor do topo da pilha e ir
+         * atribuindo os valores do acesso ao vetor as variáveis descritas no nó
+         */
+
+        node.getIndex().accept(this);
+        ST singleRet = groupTemplate.getInstanceOf("return_single_access");
+        singleRet.add("exp", this.exp);
+        callExp.add("return", singleRet);
+        this.exp = callExp;
+    }
 
     @Override
-    public void visit (Call node){}
+    public void visit(CallStmt node) {
+        ST callCmd = groupTemplate.getInstanceOf("call_cmd");
+
+        // nome da funcao
+        callCmd.add("name", localType.getFunctionID());
+
+        // parâmetros
+        ArrayList<ST> args = new ArrayList<ST>();
+        String argTypes = "";
+        for (Exp e : node.getArgs()) {
+            e.accept(this);
+            args.add(this.exp);
+            argTypes += mapTypeToDescriptor(typeChecker.typeOf(e));
+        }
+
+        callCmd.add("args", args);
+        callCmd.add("arg_types", argTypes);
+
+        // assinatura do retorno
+        if (((STyFun) localType.getType()).getReturns().length > 0) {
+            callCmd.add("return", "[Ljava/lang/Object;");
+        } else {
+            callCmd.add("return", "V");
+            return;
+        }
+
+        /*
+         * Até esse ponto, Call e CallStmt são iguais. O retorno é um vetor e está no
+         * topo da pilha Para call, devemos montar um acesso a vetor usando o índice do
+         * nó call Para call Stmt, devemos iterar o vetor do topo da pilha e ir
+         * atribuindo os valores do acesso ao vetor as variáveis descritas no nó
+         */
+
+        ST multiRet = groupTemplate.getInstanceOf("return_multi_access");
+        int varAuxArr = localMap.getEnv().size();
+        int varAuxItr = localMap.getEnv().size() + 1;
+        multiRet.add("aux", varAuxArr);
+        multiRet.add("itr", varAuxItr);
+        ArrayList<ST> multiRets = new ArrayList<ST>();
+        for (LValue l : node.getReturns()) {
+            int varNum = localMap.get(((Var) l).getName()); // por enquanto só variavel simples
+            ST multiRetAux = groupTemplate.getInstanceOf("return_multi_aux");
+            multiRetAux.add("aux", varAuxArr);
+            multiRetAux.add("itr", varAuxItr);
+            ST varAccess = groupTemplate.getInstanceOf("var_access");
+            // POR ENQUANTO SÓ INTEIRO
+            SType varType = localType.get(((Var) l).getName());
+            if (varType instanceof STyInt) {
+                varAccess.add("instruction", "istore");
+            }
+            varAccess.add("num", varNum);
+            multiRetAux.add("var_access", varAccess);
+            multiRets.add(multiRetAux);
+        }
+        multiRet.add("attr", multiRets);
+        this.cmd = multiRet;
+    }
 
     @Override
-    public void visit (CallStmt node){}
-
-    @Override
-    public void visit (Null node){}
+    public void visit(Null node) {
+        ST nullExp = groupTemplate.getInstanceOf("null_exp");
+        this.exp = nullExp;
+    }
 
     @Override
     public void visit (New node){
@@ -585,8 +690,6 @@ public class JasminVisitor extends Visitor {
 
     @Override
     public void visit (Decl node){}
-
-   
 
     @Override
     public void visit (ExpList node){}

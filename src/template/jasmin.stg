@@ -118,6 +118,29 @@ iadd
 istore_<itr>
 >>
 
+return_single_access(exp) ::= <<
+<exp>
+iaload
+>>
+
+return_multi_access(aux, itr, attr) ::= <<
+astore_<aux>
+iconst_0
+istore_<itr>
+<attr; separator="\n">
+>>
+
+return_multi_aux(aux, itr, var_access) ::= <<
+aload_<aux>
+iload_<itr>
+iaload
+<var_access>
+iload_<itr>
+iconst_1
+iadd
+istore_<itr>
+>>
+
 
 iterate_cond_int(label, id, itr, body) ::= <<
 <id>
@@ -174,9 +197,10 @@ newarray int
 astore <num>
 >>
 
-call(class, name, type, return, args) ::= <<
+call(name, arg_types, ret_type, args, return) ::= <<
 <args; separator="\n">
-invokestatic <class>/<name>(<type>)<return>
+invokestatic ProgramaLang/<name>(<arg_types>)<ret_type>
+<return>
 >>
 
 assign_cmd(exp, instruction, var_num) ::= <<
@@ -272,4 +296,8 @@ ldc <value>
 
 int_exp(value) ::= <<
 sipush <value>
+>>
+
+null_exp() ::= <<
+acost_null
 >>
