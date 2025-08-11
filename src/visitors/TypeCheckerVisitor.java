@@ -21,8 +21,7 @@ import java.util.Scanner;
 
 /* TODO:
  * Retorno da call tem que criar variável caso n exista
- * n pode chorar quando funcao sem retorno n tiver return
- * CONSERTAR READ
+ * n pode chorar quando funcao sem retorno n tiver return (perguntei para Leo, aguarda resposta)
  */
 
 public class TypeCheckerVisitor extends Visitor {
@@ -737,7 +736,7 @@ public class TypeCheckerVisitor extends Visitor {
             operands.push(tyError);
         } else {
             if (!(node.getIndex() instanceof NInt)) {
-                log.add(getColAndLine(node) + "indice do retorno da chamada da funcao " + node.getFuncName()
+                log.add(getColAndLine(node) + "Índice do retorno da chamada da funcao " + node.getFuncName()
                         + " nao e um literal inteiro!");
                 operands.push(tyError);
             } else {
@@ -748,19 +747,13 @@ public class TypeCheckerVisitor extends Visitor {
 
     @Override
         public void visit(Read node) {
-            // if (returnMode) return;
-            
-    
-            // int value = inputReader.nextInt();
-
-          
-            // LValue lvalue = node.getLValue();
-            // if (lvalue instanceof Var) {
-            //     String varName = ((Var) lvalue).getName();
-            //     addOrUpdateVariable(varName, Integer.valueOf(value));
-            // } else {
-            //     throw new RuntimeException("Erro: 'read' só pode ser usado com variaveis simples.");
-            // }
+            node.getLValue().accept(this);
+            SType readType = operands.pop();
+            if (!(readType instanceof STyInt || readType instanceof STyBool || readType instanceof STyFloat
+                    || readType instanceof STyChar)) {
+                log.add(getColAndLine(node) + "Tentativa de ler variável do tipo " + readType.toString()
+                        + ". Esperado: INT BOOL FLOAT ou CHAR");
+            }
         }
     
         @Override
