@@ -95,9 +95,27 @@ invokevirtual java/io/PrintStream/println(I)V
 
 >>
 
-ireturn(exp) ::= <<
+return_cmd(size, itr, rets, aux) ::= <<
+bipush <size>
+anewarray java/lang/Object
+astore_<aux>
+iconst_0
+istore_<itr>
+<rets; separator="\n">
+aload_<aux>
+areturn
+>>
+
+return_cmd_aux(aux, itr, exp, cast) ::= <<
+aload_<aux>
+iload_<itr>
 <exp>
-ireturn
+<cast>
+aastore
+iload_<itr>
+iconst_1
+iadd
+istore_<itr>
 >>
 
 

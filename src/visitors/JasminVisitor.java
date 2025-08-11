@@ -17,6 +17,7 @@ import langUtil.STyBool;
 import langUtil.STyChar;
 import langUtil.STyData;
 import langUtil.STyFloat;
+import langUtil.STyFun;
 import langUtil.STyInt;
 import langUtil.SType;
 import langUtil.TyEnv;
@@ -99,15 +100,17 @@ public class JasminVisitor extends Visitor {
         LinkedHashMap<String, SType> envVars = this.localType.getEnv();
 
         fun.add("stack_max", "10");
-        fun.add("env_vars_qtd", envVars.size());
 
+        int locals = envVars.size();
 
-        if (node.getType().size() > 0) { // aqui será array de Objects
-            node.getType().get(0).accept(this);
-            fun.add("return", type);
+        if (node.getType().size() > 0) {
+            fun.add("return", "[Ljava/lang/Object;"); // aqui será array de Objects
+            locals += 2; // duas variáveis auxiliares pro vetor de objetos e pro iterador
         } else {
             fun.add("return", "V");
         }
+
+        fun.add("env_vars_qtd", locals);
 
         params = new ArrayList<ST>();
         for (Param p : node.getParams()) {
@@ -375,20 +378,11 @@ public class JasminVisitor extends Visitor {
 
     @Override
     public void visit(Iterate node) {
-
-        /*
-         * copiar o localMap se for itcondid colocar a variavel nova no localMap depois
-         * reestabelecer o localMap ao terminar isso funciona pra iterate aninhado??
-         * 
-         * quando for itcondid array, preciso ver o tipo da exp se for Var, eu ja olho
-         * no localType se é STyArr Mas se for Dot ou ArrayAccess? visito os nós!
-         * 
-         * ainda nao sei como saber se a exp vai resultar em um array ou nao
-         */
+        LocalEnv<Integer> aux = localMap.cloneEnv();
 
         ST iterateCmd;
         int varNum = localMap.getEnv().size();
-        node.getCondition().accept(this); // a EXP é igual pra todos casos, tá armazenada no this.exp
+        node.getCondition().accept(this);
 
         if (node.getCondition() instanceof ItCondExp) {
             iterateCmd = groupTemplate.getInstanceOf("iterate_cond_int");
@@ -398,12 +392,11 @@ public class JasminVisitor extends Visitor {
             String idName = ((ItCondId) node.getCondition()).getID();
             if (localMap.hasKey(idName)) {
                 varNum = localMap.get(idName);
-            } else {
-
             }
-            System.out.println(localType.get(idName).toString());
+
             // se vai iterar sobre o length de um array
-            if (localType.get(idName) instanceof STyArr) {
+            if (((ItCondId) node.getCondition()).getCond() instanceof LValue) {
+                System.out.println("opaopa");
                 iterateCmd = groupTemplate.getInstanceOf("iterate_cond_array");
                 iterateCmd.add("id", this.exp);
                 iterateCmd.add("itr", varNum);
@@ -426,13 +419,50 @@ public class JasminVisitor extends Visitor {
         }
 
         this.cmd = iterateCmd;
+
+        // reestabelece mapa anterior
+        localMap = aux;
+        jEnvs.put(localMap.getFunctionID(), aux);
     }
 
     @Override
     public void visit(Return node) {
-        ST returnCmd = groupTemplate.getInstanceOf("ireturn");
-        node.getExps().get(0).accept(this); // por enquanto retorno single
-        returnCmd.add("exp", exp);
+
+        /*
+         * 1. Cria um array de objetos, necessita var auxiliar 2. Cria um iterador,
+         * necessita outra var auxiliar 3. Inicializa array com size dos retornos 4.
+         * Inicializa iterador com 0 5. Para cada retorno: 5.1 Load no array 5.2 Load no
+         * iterador 5.3 Expressão 5.4 Cast se for do tipo primitivo 5.5 Salva no vetor
+         * na posicao do iterador 5.6 Incrementa iterador 6. Ao final: Load no array
+         * retorna array
+         */
+
+        ST returnCmd = groupTemplate.getInstanceOf("return_cmd");
+        int retSize = node.getExps().size();
+        returnCmd.add("size", retSize);
+        int varAuxArr = localMap.getEnv().size();
+        int varAuxItr = localMap.getEnv().size() + 1;
+        returnCmd.add("itr", varAuxItr);
+        returnCmd.add("aux", varAuxArr);
+        SType[] rTypes = ((STyFun) localType.getType()).getReturns();
+        ArrayList<ST> retAuxs = new ArrayList<ST>();
+        List<Exp> retExps = node.getExps();
+        for (int i = 0; i < rTypes.length; i++) {
+            ST retAux = groupTemplate.getInstanceOf("return_cmd_aux");
+            retExps.get(i).accept(this);
+            retAux.add("itr", varAuxItr);
+            retAux.add("aux", varAuxArr);
+            retAux.add("exp", this.exp);
+            if (rTypes[i] instanceof STyInt || rTypes[i] instanceof STyChar) {
+                retAux.add("cast", "invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;");
+            } else if (rTypes[i] instanceof STyBool) {
+                retAux.add("cast", "invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;");
+            } else if (rTypes[i] instanceof STyFloat) {
+                retAux.add("cast", "invokestatic java/lang/Float/valueOf(F)Ljava/lang/Float;");
+            }
+            retAuxs.add(retAux);
+        }
+        returnCmd.add("rets", retAuxs);
         this.cmd = returnCmd;
     }
 
