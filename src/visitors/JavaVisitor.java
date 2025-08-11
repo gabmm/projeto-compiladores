@@ -10,6 +10,7 @@ import langUtil.*;
 import java.util.List;
 import java.util.Map;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.LinkedHashMap;
 
@@ -19,6 +20,8 @@ public class JavaVisitor extends Visitor {
     private ST type, cmd, exp;
     private List<ST> funs, params, datas, block;
     private TyEnv<LocalEnv<SType>> envs;
+    private LocalEnv<SType> currentEnv;
+    private Set<String> declaredInScope = new HashSet<>();
     private ArrayList<String> javaProgram;
 
     public JavaVisitor(TyEnv<LocalEnv<SType>> envs){
@@ -43,12 +46,39 @@ public class JavaVisitor extends Visitor {
         } else if(t instanceof STyChar){
             type = groupTemplate.getInstanceOf("char_type");
         } else if(t instanceof STyArr) {
-
+            SType baseType = ((STyArr) t).getType();
+            setType(baseType); 
+            ST arrayTypeTpl = groupTemplate.getInstanceOf("array_type");
+            arrayTypeTpl.add("type", this.type); 
+            this.type = arrayTypeTpl;
         } else if (t instanceof STyData){
-
+            ST dataTypeTpl = groupTemplate.getInstanceOf("data_type");
+            dataTypeTpl.add("data_id", ((STyData) t).getID());
+            this.type = dataTypeTpl;
         }
     }
-
+    private String mapTypeToJava(SType type) {
+        if (type instanceof STyInt) {
+            return "int";
+        }
+        if (type instanceof STyFloat) {
+            return "float";
+        }
+        if (type instanceof STyBool) {
+            return "boolean";
+        }
+        if (type instanceof STyChar) {
+            return "char";
+        }
+        if (type instanceof STyData) {
+            return ((STyData) type).getID();
+        }
+        if (type instanceof STyArr) {
+            SType baseType = ((STyArr) type).getType();
+            return mapTypeToJava(baseType) + "[]";
+        }
+        return "Object"; 
+    }
     private void visitBinaryExpr(String templateName, Exp left, Exp right) { // add, sub, mul, mod, lt, eq ...
         right.accept(this);
         ST right_expr = this.exp;
@@ -130,7 +160,8 @@ public class JavaVisitor extends Visitor {
     @Override
     public void visit(Fun node){
         ST fun = groupTemplate.getInstanceOf("fun_def");
-
+        this.currentEnv = envs.get(node.getName());
+        this.declaredInScope.clear();
         if (node.getName().equals("main")){
             fun.add("name", "_main");
         } else {
@@ -151,14 +182,14 @@ public class JavaVisitor extends Visitor {
         LinkedHashMap<String, SType> vars = local.getEnv();
         int counter = 0;
 
-        for (Map.Entry<String, SType> var : vars.entrySet()){
-            if (counter++ < paramCounter) continue; //pular parâmetros
-            ST instVar = groupTemplate.getInstanceOf("var_inst");
-            instVar.add("name", var.getKey());
-            setType(var.getValue());
-            instVar.add("type", type);
-            envVars.add(instVar);
-        }
+        // for (Map.Entry<String, SType> var : vars.entrySet()){
+        //     if (counter++ < paramCounter) continue; //pular parâmetros
+        //     ST instVar = groupTemplate.getInstanceOf("var_inst");
+        //     instVar.add("name", var.getKey());
+        //     setType(var.getValue());
+        //     instVar.add("type", type);
+        //     envVars.add(instVar);
+        // }
 
         fun.add("env_vars", envVars);
 
@@ -302,13 +333,34 @@ public class JavaVisitor extends Visitor {
     public void visit (Assign node){
         node.getRhs().accept(this);
         ST rhs = this.exp;
-        node.getLhs().accept(this); 
+
+        node.getLhs().accept(this);
         ST lhs = this.exp;
-        ST assign_cmd = groupTemplate.getInstanceOf("assign_stmt");
-        assign_cmd.add("lhs", lhs);
-        assign_cmd.add("rhs", rhs);
-        this.cmd = assign_cmd;
+
+        ST assignTemplate;
+
+        if(node.getLhs() instanceof Var){
+            String varName = ((Var) node.getLhs()).getName();
+            if (!declaredInScope.contains(varName)) {
+                declaredInScope.add(varName);
+                SType varType = this.currentEnv.get(varName);
+                String javaType = mapTypeToJava(varType); 
+                
+                assignTemplate = groupTemplate.getInstanceOf("declare_assign_stmt");
+                assignTemplate.add("type", javaType);
+            } else {
+                assignTemplate = groupTemplate.getInstanceOf("assign_stmt");
+            }
+            } 
+        else {
+            assignTemplate = groupTemplate.getInstanceOf("assign_stmt");
+        }
+        assignTemplate.add("lhs", lhs);
+        assignTemplate.add("rhs", rhs);
+        this.cmd = assignTemplate;
     }
+        
+    
 
     @Override
     public void visit (ArrayAccess node){

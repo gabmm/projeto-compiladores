@@ -16,16 +16,14 @@ fun_def(name, params, env_vars, body, ret_type, ret_aux) ::= <<
 public static <ret_type> <name>(<params; separator=", ">) {
     <if(env_vars)><env_vars; separator=";\n">;<endif>
     <ret_aux>
-    <if(body)><body; separator=";\n"><endif>
+    <if(body)><body; separator="\n"><endif>
 }
 >>
 
 data_def(name, fields) ::= <<
-    class <name> {
-        <fields; separator="\n">
-        public <name>() {
-        }
-    }
+public static class <name> { 
+<fields; separator="\n">
+}
 >>
 
 field_def(type, name) ::= "        public <type> <name>;"
@@ -41,7 +39,7 @@ boolean_type() ::= "boolean"
 char_type() ::= "char"
 data_type(data_id) ::= "<data_id>"
 
-print_stmt(expr) ::= "System.out.println(<expr>)"
+print_stmt(expr) ::= "System.out.println(<expr>);"
 
 return_exp(expr) ::= "_returns.add(<expr>);"
 
@@ -69,20 +67,20 @@ block(commands) ::= <<
 <commands; separator="\n">
 >>
 
-declare_assign_stmt(type, lhs, rhs) ::= "<type> <lhs> = <rhs>"
+declare_assign_stmt(type, lhs, rhs) ::= "<type> <lhs> = <rhs>;"
 
-assign_stmt(lhs, rhs) ::= "<lhs> = <rhs>"
+assign_stmt(lhs, rhs) ::= "<lhs> = <rhs>;"
 
 
 lvalue(name, array) ::= "<name><array>"
 array_access(base, index) ::= "<base>[<index>]"
-assign_array_stmt(lhs, rhs) ::= "<lhs> = <rhs>;"
+assign_array_stmt(lhs, rhs) ::= "<lhs> = <rhs>"
 
 boolean_expr(value) ::= "<value>"
 float_expr(value) ::= "<value>"
 int_expr(value) ::= "<value>"
 
-new_array(var, type, expr) ::= "<var> = new <type>[<expr>];"
+new_array(var, type, expr) ::= "<var> = new <type>[<expr>]"
 
 call(name, args) ::= <<<name>(<args; separator=", ">)>>
 
