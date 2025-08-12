@@ -16,11 +16,12 @@ program(funs, datas) ::= <<
     .end method
 >>
 
-fun(return, name, params, env_vars_qtd, stack_max, block) ::= <<
+fun(return, name, params, env_vars_qtd, stack_max, block, void_return) ::= <<
 .method static <name>(<params>)<return>
     .limit stack <stack_max>
     .limit locals <env_vars_qtd>
     <block>
+    <void_return>
 .end method
 >>
 

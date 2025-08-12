@@ -1,5 +1,12 @@
 package visitors;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -97,12 +104,13 @@ public class JasminVisitor extends Visitor {
         fun.add("stack_max", "10");
 
         int locals = envVars.size();
+        locals += 2; // duas variáveis auxiliares pro vetor de objetos e pro iterador
 
         if (node.getType().size() > 0) {
             fun.add("return", "[Ljava/lang/Object;"); // aqui será array de Objects
-            locals += 2; // duas variáveis auxiliares pro vetor de objetos e pro iterador
         } else {
             fun.add("return", "V");
+            fun.add("void_return", "return");
         }
 
         fun.add("env_vars_qtd", locals);
@@ -781,6 +789,26 @@ public class JasminVisitor extends Visitor {
     private void updateLocalEnv(String fName) {
         this.localMap = jEnvs.get(fName);
         this.localType = envs.get(fName);
+    }
+
+    public void saveProgram() {
+        try {
+            Path currentDir = Paths.get("").toAbsolutePath();
+            Path outputFile = currentDir.resolve("ProgramaLang.j");
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile.toFile()))) {
+                ;
+                for (String line : jasminProgram) {
+                    System.out.println(line);
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+            System.out.println("Programa Jasmin criado com sucesso!");
+            System.out.println("Programa salvo em: " + outputFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
 }

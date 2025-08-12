@@ -20,6 +20,11 @@ ANTLR_JAR  = lib/string_template/antlr-3.5.2-runtime.jar
 SRC_DIR    = src
 BIN_DIR    = bin
 
+JASMIN_JAR = lib/beaver/jasmin.jar
+JASMIN_BIN_DIR = bin/jasmin
+JASMIN_SRC = ProgramaLang.j
+JASMIN_CLASS = ProgramaLang.class
+
 FLEX_FILE    = $(SRC_DIR)/parser/lexer.flex
 GRAMMAR_FILE = $(SRC_DIR)/parser/lang.grammar
 MAIN_CLASS   = Main
@@ -98,6 +103,12 @@ ifeq ($(ACTION),-dot)
 	@echo "--- Gerando imagem da AST ---"
 	@dot -Tpng ast.dot -o ast.png || echo "Erro ao gerar imagem com dot."
 endif
+
+jasmin:
+	@mkdir -p $(JASMIN_BIN_DIR)
+	java -jar $(JASMIN_JAR) -d $(JASMIN_BIN_DIR) $(JASMIN_SRC)
+	java -cp $(JASMIN_BIN_DIR) ProgramaLang
+	@rm -f $(JASMIN_BIN_DIR)/$(JASMIN_CLASS)
 
 clean:
 	$(call RM,$(BIN_DIR))
