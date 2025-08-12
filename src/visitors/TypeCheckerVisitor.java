@@ -19,11 +19,6 @@ import java.util.List;
 import java.util.Stack;
 import java.util.Scanner;
 
-/* TODO:
- * Retorno da call tem que criar variável caso n exista
- * n pode chorar quando funcao sem retorno n tiver return (perguntei para Leo, aguarda resposta)
- */
-
 public class TypeCheckerVisitor extends Visitor {
 
 
@@ -316,10 +311,16 @@ public class TypeCheckerVisitor extends Visitor {
                 SType funRet = funType.getReturns()[i];
                 if (ret instanceof Var) {
                     if (!current.hasKey(((Var) ret).getName())) {
-                        log.add(getColAndLine(node) + "Varíavel de retorno " + ((Var) ret).getName()
-                                + " não declarada durante chamada da função " + node.getID());
+                        current.put(((Var) ret).getName(), funRet);
+                    } else {
+                        SType varType = current.get(((Var) ret).getName());
+                        if (varType.match(funRet)) {
+                            current.put(((Var) ret).getName(), funRet);
+                        } else {
+                            log.add(getColAndLine(node) + "Tentativa de atribuição do tipo " + funRet.toString()
+                                    + " para a variável '" + ((Var) ret).getName() + "' do tipo " + varType.toString());
+                        }
                     }
-                    current.put(((Var) ret).getName(), funRet);
                 } else {
                     ret.accept(this);
                     SType retType = operands.pop();
