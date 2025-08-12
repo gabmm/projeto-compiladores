@@ -1,5 +1,7 @@
 group jasmin;
 
+// --- PROGRAMA FUNCOES, REGISTRO e ACESSO --- INICIO
+
 program(funs, datas) ::= <<
 .class public ProgramaLang
 .super java/lang/Object
@@ -52,50 +54,20 @@ get_field(base_obj, class_name, field_name, type_descriptor) ::= <<
 getfield <class_name>/<field_name> <type_descriptor>
 >>
 
-array_load(array_ref, index_exp, instruction) ::= <<
-<array_ref>
-<index_exp>
-<instruction>
->>
+// --- PROGRAMA FUNCOES, REGISTRO e ACESSO --- FIM
 
-array_store(array_ref, index_exp, value_exp, instruction) ::= <<
-<array_ref>
-<index_exp>
-<value_exp>
-<instruction>
->>
+// --- COMANDOS --- INICIO
 
-block(commands) ::= <<
-<commands; separator="\n">
->>
-
-new_object(class_name) ::= <<
-new <class_name>
-dup
-invokespecial <class_name>/\<init\>()V
->>
-
-new_array(size_exp, array_instruction) ::= <<
-<size_exp>
-<array_instruction>
->>
-
-
-array_type(type) ::= "[<type>"
-int_type() ::= "I"
-float_type() ::= "F"
-boolean_type() ::= "Z"
-char_type() ::= "C"
-
-
-
+//PRINT START
 iprint(exp) ::= <<
 getstatic java/lang/System/out Ljava/io/PrintStream;
 <exp>
 invokevirtual java/io/PrintStream/println(I)V
 
 >>
+//PRINT END
 
+//RETURN & CALL START
 return_cmd(size, itr, rets, aux) ::= <<
 bipush <size>
 anewarray java/lang/Object
@@ -167,7 +139,14 @@ invokevirtual java/lang/Character/charValue()C
 void() ::= <<
 >>
 
+call_cmd(name, arg_types, ret_type, args, return) ::= <<
+<args; separator="\n">
+invokestatic ProgramaLang/<name>(<arg_types>)<ret_type>
+<return>
+>>
+//RETURN && CALL END
 
+//ITERATE START
 iterate_cond_int(label, id, itr, body) ::= <<
 <id>
 istore_<itr>
@@ -205,7 +184,9 @@ goto #<label>
 #<label>#end:
 nop
 >>
+//ITERATE END
 
+//IF START
 if_cmd(label, exp, then_cmd, else_cmd) ::= <<
 <exp>
 ifeq #<label>
@@ -216,22 +197,57 @@ goto #<label>#end
 #<label>#end:
 nop
 >>
+//IF END
+
+block(commands) ::= <<
+<commands; separator="\n">
+>>
+
+//ASSIGN START
+assign_cmd(exp, instruction, var_num) ::= <<
+<exp>
+<instruction>_<var_num>
+>>
+//ASSIGN END
+
+// --- COMANDOS --- FIM
+
+// --- EXPRESSOES --- INICIO
+
+array_load(array_ref, index_exp, instruction) ::= <<
+<array_ref>
+<index_exp>
+<instruction>
+>>
+
+array_store(array_ref, index_exp, value_exp, instruction) ::= <<
+<array_ref>
+<index_exp>
+<value_exp>
+<instruction>
+>>
+
+new_object(class_name) ::= <<
+new <class_name>
+dup
+invokespecial <class_name>/\<init\>()V
+>>
+
+new_array(size_exp, array_instruction) ::= <<
+<size_exp>
+<array_instruction>
+>>
+
+array_type(type) ::= "[<type>"
+int_type() ::= "I"
+float_type() ::= "F"
+boolean_type() ::= "Z"
+char_type() ::= "C"
 
 iarray(num, exp) ::= <<
 <exp>
 newarray int
 astore <num>
->>
-
-call_cmd(name, arg_types, ret_type, args, return) ::= <<
-<args; separator="\n">
-invokestatic ProgramaLang/<name>(<arg_types>)<ret_type>
-<return>
->>
-
-assign_cmd(exp, instruction, var_num) ::= <<
-<exp>
-<instruction>_<var_num>
 >>
 
 iastore(num, index, exp) ::= <<
@@ -327,3 +343,5 @@ sipush <value>
 null_exp() ::= <<
 acost_null
 >>
+
+// --- EXPRESSOES --- FIM

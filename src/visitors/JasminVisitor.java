@@ -59,17 +59,6 @@ public class JasminVisitor extends Visitor {
         jEnvs.printMap();
     }
 
-    public void printProg() {
-        for (String s : jasminProgram) {
-            System.out.println(s);
-        }
-    }
-
-    private void updateLocalEnv(String fName) {
-        this.localMap = jEnvs.get(fName);
-        this.localType = envs.get(fName);
-    }
-
     @Override
     public void visit(Prog node){
         ST prog = groupTemplate.getInstanceOf("program");
@@ -149,15 +138,6 @@ public class JasminVisitor extends Visitor {
         }
         datas.add(data);
     }
-    private String mapTypeToDescriptor(SType type) {
-        if (type instanceof langUtil.STyInt) return "I";
-        if (type instanceof langUtil.STyFloat) return "F";
-        if (type instanceof langUtil.STyBool) return "Z";
-        if (type instanceof langUtil.STyChar) return "C";
-        if (type instanceof langUtil.STyData) return "LProgramaLang$" + ((langUtil.STyData) type).getID() + ";";
-        if (type instanceof langUtil.STyArr) return "[" + mapTypeToDescriptor(((langUtil.STyArr) type).getType());
-        return "Ljava/lang/Object;";
-    }
 
     @Override
     public void visit(Dot node) {
@@ -193,25 +173,7 @@ public class JasminVisitor extends Visitor {
             node.getIndex().accept(this);
             arrayLoadTpl.add("index_exp", exp);
             this.exp = arrayLoadTpl;
-    }
-    private void visitBinaryExpr(String op, Exp left, Exp right) {
-        ST binExp = groupTemplate.getInstanceOf("binary_exp");
-        binExp.add("op", op);
-        left.accept(this);
-        binExp.add("left_exp", exp);
-        right.accept(this);
-        binExp.add("right_exp", exp);
-        this.exp = binExp;
-    }
-
-    private String checkType(Exp node) {
-        SType t = typeChecker.typeOf(node);
-        if (t instanceof STyInt) {
-            return "i";
-        } else {
-            return "f";
         }
-    }
 
     @Override
     public void visit(Mul node) {
@@ -286,8 +248,6 @@ public class JasminVisitor extends Visitor {
         varExp.add("instruction", instruction);
             this.exp = varExp;
     }
-
-    
 
     @Override
     public void visit(NBool node) {
@@ -598,20 +558,6 @@ public class JasminVisitor extends Visitor {
         this.exp = callExp;
     }
 
-    private ST getUnboxTpl(SType t) {
-        if (t instanceof STyInt) {
-            return groupTemplate.getInstanceOf("unbox_int");
-        } else if (t instanceof STyFloat) {
-            return groupTemplate.getInstanceOf("unbox_float");
-        } else if (t instanceof STyChar) {
-            return groupTemplate.getInstanceOf("unbox_char");
-        } else if (t instanceof STyBool) {
-            return groupTemplate.getInstanceOf("unbox_bool");
-        } else {
-            return groupTemplate.getInstanceOf("void");
-        }
-    }
-
     @Override
     public void visit(CallStmt node) {
         ST callCmd = groupTemplate.getInstanceOf("call_cmd");
@@ -771,9 +717,70 @@ public class JasminVisitor extends Visitor {
         visitBinaryExpr("irem", node.getLeft(), node.getRight());
     }
 
-
-
     @Override
-    public void visit(Read node){}
+    public void visit(Read node) {
+    }
+
+    // --- FUNCOES AUXILIARES ---
+
+    private ST getUnboxTpl(SType t) {
+        if (t instanceof STyInt) {
+            return groupTemplate.getInstanceOf("unbox_int");
+        } else if (t instanceof STyFloat) {
+            return groupTemplate.getInstanceOf("unbox_float");
+        } else if (t instanceof STyChar) {
+            return groupTemplate.getInstanceOf("unbox_char");
+        } else if (t instanceof STyBool) {
+            return groupTemplate.getInstanceOf("unbox_bool");
+        } else {
+            return groupTemplate.getInstanceOf("void");
+        }
+    }
+
+    private void visitBinaryExpr(String op, Exp left, Exp right) {
+        ST binExp = groupTemplate.getInstanceOf("binary_exp");
+        binExp.add("op", op);
+        left.accept(this);
+        binExp.add("left_exp", exp);
+        right.accept(this);
+        binExp.add("right_exp", exp);
+        this.exp = binExp;
+    }
+
+    private String checkType(Exp node) {
+        SType t = typeChecker.typeOf(node);
+        if (t instanceof STyInt) {
+            return "i";
+        } else {
+            return "f";
+        }
+    }
+
+    private String mapTypeToDescriptor(SType type) {
+        if (type instanceof langUtil.STyInt)
+            return "I";
+        if (type instanceof langUtil.STyFloat)
+            return "F";
+        if (type instanceof langUtil.STyBool)
+            return "Z";
+        if (type instanceof langUtil.STyChar)
+            return "C";
+        if (type instanceof langUtil.STyData)
+            return "LProgramaLang$" + ((langUtil.STyData) type).getID() + ";";
+        if (type instanceof langUtil.STyArr)
+            return "[" + mapTypeToDescriptor(((langUtil.STyArr) type).getType());
+        return "Ljava/lang/Object;";
+    }
+
+    public void printProg() {
+        for (String s : jasminProgram) {
+            System.out.println(s);
+        }
+    }
+
+    private void updateLocalEnv(String fName) {
+        this.localMap = jEnvs.get(fName);
+        this.localType = envs.get(fName);
+    }
 
 }
