@@ -16,6 +16,7 @@ import langUtil.STyArr;
 import langUtil.STyBool;
 import langUtil.STyChar;
 import langUtil.STyData;
+import langUtil.STyError;
 import langUtil.STyFloat;
 import langUtil.STyFun;
 import langUtil.STyInt;
@@ -94,7 +95,12 @@ public class JasminVisitor extends Visitor {
     @Override
     public void visit(Fun node) {
         ST fun = groupTemplate.getInstanceOf("fun");
-        fun.add("name", node.getName());
+
+        if (node.getName().equals("main")) {
+            fun.add("name", "_" + node.getName());
+        } else {
+            fun.add("name", node.getName());
+        }
 
         updateLocalEnv(node.getName());
         LinkedHashMap<String, SType> envVars = this.localType.getEnv();
@@ -296,16 +302,15 @@ public class JasminVisitor extends Visitor {
 
     @Override
     public void visit(NChar node) {
-        ST charExp = groupTemplate.getInstanceOf("int_exp");
-        // converter Char pra Int e adicionar
-        charExp.add("value", node.getValue());
+        ST charExp = groupTemplate.getInstanceOf("float_exp");
+        charExp.add("value", "'" + node.getValue() + "'");
         this.exp = charExp;
     }
 
     @Override
     public void visit(NFloat node) {
         ST floatExp = groupTemplate.getInstanceOf("float_exp");
-        floatExp.add("value", node.getValue());
+        floatExp.add("value", node.getValue() + "F");
         this.exp = floatExp;
     }
 
@@ -405,7 +410,6 @@ public class JasminVisitor extends Visitor {
 
             // se vai iterar sobre o length de um array
             if (((ItCondId) node.getCondition()).getCond() instanceof LValue) {
-                System.out.println("opaopa");
                 iterateCmd = groupTemplate.getInstanceOf("iterate_cond_array");
                 iterateCmd.add("id", this.exp);
                 iterateCmd.add("itr", varNum);
@@ -462,12 +466,14 @@ public class JasminVisitor extends Visitor {
             retAux.add("itr", varAuxItr);
             retAux.add("aux", varAuxArr);
             retAux.add("exp", this.exp);
-            if (rTypes[i] instanceof STyInt || rTypes[i] instanceof STyChar) {
+            if (rTypes[i] instanceof STyInt) {
                 retAux.add("cast", "invokestatic java/lang/Integer/valueOf(I)Ljava/lang/Integer;");
             } else if (rTypes[i] instanceof STyBool) {
                 retAux.add("cast", "invokestatic java/lang/Boolean/valueOf(Z)Ljava/lang/Boolean;");
             } else if (rTypes[i] instanceof STyFloat) {
                 retAux.add("cast", "invokestatic java/lang/Float/valueOf(F)Ljava/lang/Float;");
+            } else if (rTypes[i] instanceof STyChar) {
+                retAux.add("cast", "invokestatic java/lang/Character/valueOf(C)Ljava/lang/Character;");
             }
             retAuxs.add(retAux);
         }
@@ -547,10 +553,10 @@ public class JasminVisitor extends Visitor {
 
     @Override
     public void visit(Call node) {
-        ST callExp = groupTemplate.getInstanceOf("call");
+        ST callExp = groupTemplate.getInstanceOf("call_cmd");
 
         // nome da funcao
-        callExp.add("name", localType.getFunctionID());
+        callExp.add("name", envs.get(node.getFuncName()).getFunctionID());
 
         // parâmetros
         ArrayList<ST> args = new ArrayList<ST>();
@@ -564,26 +570,46 @@ public class JasminVisitor extends Visitor {
         callExp.add("args", args);
         callExp.add("arg_types", argTypes);
 
+        STyFun fType = (STyFun) envs.get(node.getFuncName()).getType();
+
         // assinatura do retorno
-        if (((STyFun) localType.getType()).getReturns().length > 0) {
-            callExp.add("return", "[Ljava/lang/Object;");
+        if (fType.getReturns().length > 0) {
+            callExp.add("ret_type", "[Ljava/lang/Object;");
         } else {
-            callExp.add("return", "V");
+            callExp.add("ret_type", "V");
+            this.cmd = callExp;
             return;
         }
 
         /*
          * Até esse ponto, Call e CallStmt são iguais. O retorno é um vetor e está no
-         * topo da pilha Para call, devemos montar um acesso a vetor usando o índice do
-         * nó call Para call Stmt, devemos iterar o vetor do topo da pilha e ir
+         * topo da pilha. Para call, devemos montar um acesso a vetor usando o índice do
+         * nó call. Para call Stmt, devemos iterar o vetor do topo da pilha e ir
          * atribuindo os valores do acesso ao vetor as variáveis descritas no nó
          */
+
 
         node.getIndex().accept(this);
         ST singleRet = groupTemplate.getInstanceOf("return_single_access");
         singleRet.add("exp", this.exp);
+        SType retType = fType.getReturns()[((NInt) node.getIndex()).getValue()];
+        singleRet.add("unbox", getUnboxTpl(retType));
         callExp.add("return", singleRet);
         this.exp = callExp;
+    }
+
+    private ST getUnboxTpl(SType t) {
+        if (t instanceof STyInt) {
+            return groupTemplate.getInstanceOf("unbox_int");
+        } else if (t instanceof STyFloat) {
+            return groupTemplate.getInstanceOf("unbox_float");
+        } else if (t instanceof STyChar) {
+            return groupTemplate.getInstanceOf("unbox_char");
+        } else if (t instanceof STyBool) {
+            return groupTemplate.getInstanceOf("unbox_bool");
+        } else {
+            return groupTemplate.getInstanceOf("void");
+        }
     }
 
     @Override
@@ -591,7 +617,7 @@ public class JasminVisitor extends Visitor {
         ST callCmd = groupTemplate.getInstanceOf("call_cmd");
 
         // nome da funcao
-        callCmd.add("name", localType.getFunctionID());
+        callCmd.add("name", envs.get(node.getID()).getFunctionID());
 
         // parâmetros
         ArrayList<ST> args = new ArrayList<ST>();
@@ -604,19 +630,19 @@ public class JasminVisitor extends Visitor {
 
         callCmd.add("args", args);
         callCmd.add("arg_types", argTypes);
-
         // assinatura do retorno
-        if (((STyFun) localType.getType()).getReturns().length > 0) {
-            callCmd.add("return", "[Ljava/lang/Object;");
+        if (((STyFun) envs.get(node.getID()).getType()).getReturns().length > 0) {
+            callCmd.add("ret_type", "[Ljava/lang/Object;");
         } else {
-            callCmd.add("return", "V");
+            callCmd.add("ret_type", "V");
+            this.cmd = callCmd;
             return;
         }
 
         /*
          * Até esse ponto, Call e CallStmt são iguais. O retorno é um vetor e está no
-         * topo da pilha Para call, devemos montar um acesso a vetor usando o índice do
-         * nó call Para call Stmt, devemos iterar o vetor do topo da pilha e ir
+         * topo da pilha. Para call, devemos montar um acesso a vetor usando o índice do
+         * nó call. Para call Stmt, devemos iterar o vetor do topo da pilha e ir
          * atribuindo os valores do acesso ao vetor as variáveis descritas no nó
          */
 
@@ -631,10 +657,14 @@ public class JasminVisitor extends Visitor {
             ST multiRetAux = groupTemplate.getInstanceOf("return_multi_aux");
             multiRetAux.add("aux", varAuxArr);
             multiRetAux.add("itr", varAuxItr);
-            ST varAccess = groupTemplate.getInstanceOf("var_access");
-            // POR ENQUANTO SÓ INTEIRO
             SType varType = localType.get(((Var) l).getName());
-            if (varType instanceof STyInt) {
+            multiRetAux.add("unbox", getUnboxTpl(varType));
+            ST varAccess = groupTemplate.getInstanceOf("var_access");
+            if (varType instanceof STyFloat) {
+                varAccess.add("instruction", "fstore");
+            } else if (varType instanceof STyData || varType instanceof STyArr) {
+                varAccess.add("instruction", "astore");
+            } else {
                 varAccess.add("instruction", "istore");
             }
             varAccess.add("num", varNum);
@@ -642,7 +672,8 @@ public class JasminVisitor extends Visitor {
             multiRets.add(multiRetAux);
         }
         multiRet.add("attr", multiRets);
-        this.cmd = multiRet;
+        callCmd.add("return", multiRet);
+        this.cmd = callCmd;
     }
 
     @Override
@@ -702,7 +733,7 @@ public class JasminVisitor extends Visitor {
 
     @Override
     public void visit(TyChar node) {
-        ST intType = groupTemplate.getInstanceOf("int_type");
+        ST intType = groupTemplate.getInstanceOf("char_type");
         this.type = intType;
     }
 

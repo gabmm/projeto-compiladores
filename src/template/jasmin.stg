@@ -9,7 +9,7 @@ program(funs, datas) ::= <<
 
     .method public static main([Ljava/lang/String;)V
         .limit stack 1
-        invokestatic ProgramaLang/_main()I
+        invokestatic ProgramaLang/_main()V
         return
     .end method
 >>
@@ -85,6 +85,7 @@ array_type(type) ::= "[<type>"
 int_type() ::= "I"
 float_type() ::= "F"
 boolean_type() ::= "Z"
+char_type() ::= "C"
 
 
 
@@ -118,9 +119,10 @@ iadd
 istore_<itr>
 >>
 
-return_single_access(exp) ::= <<
+return_single_access(exp, unbox) ::= <<
 <exp>
-iaload
+aaload
+<unbox>
 >>
 
 return_multi_access(aux, itr, attr) ::= <<
@@ -130,15 +132,39 @@ istore_<itr>
 <attr; separator="\n">
 >>
 
-return_multi_aux(aux, itr, var_access) ::= <<
+return_multi_aux(aux, itr, var_access, unbox) ::= <<
 aload_<aux>
 iload_<itr>
-iaload
+aaload
+<unbox>
 <var_access>
 iload_<itr>
 iconst_1
 iadd
 istore_<itr>
+>>
+
+unbox_int() ::= <<
+checkcast java/lang/Integer
+invokevirtual java/lang/Integer/intValue()I
+>>
+
+unbox_float() ::= <<
+checkcast java/lang/Float
+invokevirtual java/lang/Float/floatValue()F
+>>
+
+unbox_bool() ::= <<
+checkcast java/lang/Boolean
+invokevirtual java/lang/Boolean/booleanValue()Z
+>>
+
+unbox_char() ::= <<
+checkcast java/lang/Character
+invokevirtual java/lang/Character/charValue()C
+>>
+
+void() ::= <<
 >>
 
 
@@ -197,7 +223,7 @@ newarray int
 astore <num>
 >>
 
-call(name, arg_types, ret_type, args, return) ::= <<
+call_cmd(name, arg_types, ret_type, args, return) ::= <<
 <args; separator="\n">
 invokestatic ProgramaLang/<name>(<arg_types>)<ret_type>
 <return>
