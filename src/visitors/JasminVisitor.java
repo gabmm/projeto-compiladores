@@ -43,6 +43,7 @@ public class JasminVisitor extends Visitor {
     private TyEnv<LocalEnv<Integer>> jEnvs;
     private TypeCheckerVisitor typeChecker;
     private int ltLabel = 0, eqLabel = 0, neqLabel = 0, itLabel = 0, ifLabel = 0;
+    private STyInt tyInt = STyInt.initSTyInt();
 
     public JasminVisitor(TypeCheckerVisitor tc, TyEnv<LocalEnv<SType>> envs) {
         this.typeChecker = tc;
@@ -278,7 +279,7 @@ public class JasminVisitor extends Visitor {
     @Override
     public void visit(NFloat node) {
         ST floatExp = groupTemplate.getInstanceOf("float_exp");
-        floatExp.add("value", node.getValue() + "F");
+        floatExp.add("value", node.getValue());
         this.exp = floatExp;
     }
 
@@ -302,7 +303,20 @@ public class JasminVisitor extends Visitor {
 
     @Override
     public void visit(Print node) {
-        ST printCmd = groupTemplate.getInstanceOf("iprint");
+        SType t = typeChecker.typeOf(node.getExpr());
+        ST printCmd;
+        if (t instanceof STyInt) {
+            printCmd = groupTemplate.getInstanceOf("int_print");
+        } else if (t instanceof STyFloat) {
+            printCmd = groupTemplate.getInstanceOf("float_print");
+        } else if (t instanceof STyBool) {
+            printCmd = groupTemplate.getInstanceOf("bool_print");
+        } else if (t instanceof STyChar) {
+            printCmd = groupTemplate.getInstanceOf("char_print");
+        } else {
+            printCmd = groupTemplate.getInstanceOf("null_print");
+        }
+
         node.getExpr().accept(this);
         printCmd.add("exp", this.exp);
         this.cmd = printCmd;
@@ -360,7 +374,8 @@ public class JasminVisitor extends Visitor {
 
     @Override
     public void visit(Iterate node) {
-        LocalEnv<Integer> aux = localMap.cloneEnv();
+        // LocalEnv<Integer> auxI = localMap.cloneEnv();
+        // LocalEnv<SType> auxT = localType.cloneEnv();
 
         ST iterateCmd;
         int varNum = localMap.getEnv().size();
@@ -374,13 +389,20 @@ public class JasminVisitor extends Visitor {
             String idName = ((ItCondId) node.getCondition()).getID();
             if (localMap.hasKey(idName)) {
                 varNum = localMap.get(idName);
+            } else {
+                localMap.put(idName, varNum);
+                localType.put(idName, tyInt);
             }
 
             // se vai iterar sobre o length de um array
             if (((ItCondId) node.getCondition()).getCond() instanceof LValue) {
                 iterateCmd = groupTemplate.getInstanceOf("iterate_cond_array");
+                SType arrT = typeChecker.typeOf(((ItCondId) node.getCondition()).getCond());
+                iterateCmd.add("array_type_load", getALoadInstr(((STyArr) arrT).getType()));
+                iterateCmd.add("store_instr", getStoreInstr(((STyArr) arrT).getType()));
                 iterateCmd.add("id", this.exp);
-                iterateCmd.add("itr", varNum);
+                iterateCmd.add("itr_var", varNum);
+                iterateCmd.add("itr", ++varNum);
 
                 // se vai iterar sobre um inteiro
             } else {
@@ -401,9 +423,19 @@ public class JasminVisitor extends Visitor {
 
         this.cmd = iterateCmd;
 
+        if (node.getCondition() instanceof ItCondId) {
+            String idName = ((ItCondId) node.getCondition()).getID();
+            if (localMap.hasKey(idName)) {
+                localMap.getEnv().remove(idName, varNum);
+                localType.getEnv().put(idName, tyInt);
+            }
+        }
+
         // reestabelece mapa anterior
-        localMap = aux;
-        jEnvs.put(localMap.getFunctionID(), aux);
+        // localMap = auxI;
+        // jEnvs.put(localMap.getFunctionID(), auxI);
+        // localType = auxT;
+        // envs.put(localType.getFunctionID(), auxT);
     }
 
     @Override
@@ -451,12 +483,11 @@ public class JasminVisitor extends Visitor {
 
     @Override
     public void visit(Assign node) {
-        // por enquanto, apenas atribuição pra variável comum
-
         /*
          * Lembre-se: não existe variavel não declarada! o lado esquerdo sempre estará
          * no localMap so preciso buscar o Int mapeado pro nome da var
          */
+
         LValue lhs = node.getLhs();
         if(lhs instanceof Var){
             ST assignCmd = groupTemplate.getInstanceOf("assign_cmd");
@@ -464,14 +495,7 @@ public class JasminVisitor extends Visitor {
             int varNum = this.localMap.get(varName);
             assignCmd.add("var_num", varNum);
             SType varType = this.localType.get(varName);
-            String instruction;
-            if (varType instanceof STyInt || varType instanceof STyBool || varType instanceof STyChar) {
-                instruction = "istore"; 
-            } else if (varType instanceof STyFloat) {
-                instruction = "fstore"; 
-            } else { 
-                instruction = "astore"; 
-            }
+            String instruction = getStoreInstr(varType);
             assignCmd.add("instruction", instruction);
             node.getRhs().accept(this);
             assignCmd.add("exp", exp);
@@ -789,6 +813,36 @@ public class JasminVisitor extends Visitor {
     private void updateLocalEnv(String fName) {
         this.localMap = jEnvs.get(fName);
         this.localType = envs.get(fName);
+    }
+
+    private String getLoadInstr(SType t) {
+        if (t instanceof STyInt || t instanceof STyBool || t instanceof STyChar) {
+            return "iload";
+        } else if (t instanceof STyFloat) {
+            return "fload";
+        } else {
+            return "aload";
+        }
+    }
+
+    private String getStoreInstr(SType t) {
+        if (t instanceof STyInt || t instanceof STyBool || t instanceof STyChar) {
+            return "istore";
+        } else if (t instanceof STyFloat) {
+            return "fstore";
+        } else {
+            return "astore";
+        }
+    }
+
+    private String getALoadInstr(SType t) {
+        if (t instanceof STyInt || t instanceof STyBool || t instanceof STyChar) {
+            return "iaload";
+        } else if (t instanceof STyFloat) {
+            return "faload";
+        } else {
+            return "aaload";
+        }
     }
 
     public void saveProgram() {

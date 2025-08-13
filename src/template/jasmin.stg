@@ -60,10 +60,39 @@ getfield <class_name>/<field_name> <type_descriptor>
 // --- COMANDOS --- INICIO
 
 //PRINT START
-iprint(exp) ::= <<
+int_print(exp) ::= <<
 getstatic java/lang/System/out Ljava/io/PrintStream;
 <exp>
 invokevirtual java/io/PrintStream/println(I)V
+
+>>
+
+float_print(exp) ::= <<
+getstatic java/lang/System/out Ljava/io/PrintStream;
+<exp>
+invokevirtual java/io/PrintStream/println(F)V
+
+>>
+
+bool_print(exp) ::= <<
+getstatic java/lang/System/out Ljava/io/PrintStream;
+<exp>
+invokestatic java/lang/String/valueOf(Z)Ljava/lang/String;
+invokevirtual java/io/PrintStream/println(Ljava/lang/String;)V
+
+>>
+
+char_print(exp) ::= <<
+getstatic java/lang/System/out Ljava/io/PrintStream;
+<exp>
+invokevirtual java/io/PrintStream/println(C)V
+
+>>
+
+null_print(exp) ::= <<
+getstatic java/lang/System/out Ljava/io/PrintStream;
+<exp>
+invokevirtual java/io/PrintStream/println(Ljava/lang/Object;)V
 
 >>
 //PRINT END
@@ -153,7 +182,7 @@ iterate_cond_int(label, id, itr, body) ::= <<
 istore_<itr>
 #<label>:
 iload_<itr>
-ifle #<label>#end:
+ifle #<label>#end
 <body>
 iload_<itr>
 iconst_1
@@ -164,7 +193,7 @@ goto #<label>
 nop
 >>
 
-iterate_cond_array(label, id, body, itr) ::= <<
+iterate_cond_array(label, id, body, itr, array_type_load, itr_var, store_instr) ::= <<
 <id>
 arraylength
 iconst_1
@@ -172,10 +201,11 @@ isub
 istore_<itr>
 #<label>:
 iload_<itr>
-ifle #<label>#end:
+iflt #<label>#end
 <id>
-iload<itr>
-aload
+iload_<itr>
+<array_type_load>
+<store_instr>_<itr_var>
 <body>
 iload_<itr>
 iconst_1
