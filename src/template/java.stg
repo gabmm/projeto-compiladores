@@ -1,101 +1,102 @@
 group java;
 
 program(data_defs, fun_defs) ::= <<
-public class ProgramaLang {
-    <data_defs; separator="\n\n">
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Scanner;
 
+public class LangProgram {
+    private static Scanner __inputScanner = new Scanner(System.in);
+
+    <data_defs; separator="\n\n">
     <fun_defs; separator="\n\n">
     
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         _main();
     }
 }
 >>
 
-fun_def(name, params, env_vars, body, ret_type, ret_aux) ::= <<
+fun_def(name, ret_type, params, body) ::= <<
 public static <ret_type> <name>(<params; separator=", ">) {
-    <if(env_vars)><env_vars; separator=";\n">;<endif>
-    <ret_aux>
-    <if(body)><body; separator="\n"><endif>
+<body>
 }
 >>
 
 data_def(name, fields) ::= <<
 public static class <name> { 
-<fields; separator="\n">
+    <fields; separator="\n">
 }
 >>
 
-field_def(type, name) ::= "        public <type> <name>;"
+field_def(type, name) ::= "public <type> <name>;"
 
 param_def(type, name) ::= "<type> <name>"
-var_inst(type, name) ::= "<type> <name>"
-var(name) ::= "<name>"
 
-array_type(type) ::= "<type>[]"
-int_type() ::= "int"
-float_type() ::= "float"
-boolean_type() ::= "boolean"
-char_type() ::= "char"
-data_type(data_id) ::= "<data_id>"
+block(commands) ::= <<
+    <commands; separator="\n">
+>>
+
+
+
+assign_stmt(lhs, rhs) ::= "<lhs> = <rhs>;"
+declare_assign_stmt(type, lhs, rhs) ::= "<type> <lhs> = <rhs>;"
 
 print_stmt(expr) ::= "System.out.println(<expr>);"
 
-return_exp(expr) ::= "_returns.add(<expr>);"
-
-return(return_exps) ::= <<
-<return_exps; separator="\n">
-return _returns;
+if_stmt(expr, thn, els) ::= <<
+if (<expr>) {
+<thn>
+}<if(els)> else {
+<els>
+}<endif>
 >>
 
-while(expr, stmt) ::= <<
-while(<expr>) {
-    <stmt>
+while_stmt(expr, stmt) ::= <<
+while (<expr>) {
+<stmt>
 }
 >>
 
-if(expr, thn, els) ::= <<
-if(<expr>) {
-    <thn>
-} <if(els)>else {
-    <els>
-}
-<endif>
+single_return(expr) ::= "return<if(expr)> <expr><endif>;"
+multi_return_stmt(exprs) ::= "return new ArrayList<Object>(Arrays.asList(<exprs; separator=\", \">));"
+
+call_stmt(call_expr) ::= "<call_expr>;"
+
+read_stmt(lhs, read_method) ::= "<lhs> = __inputScanner.<read_method>();"
+
+multi_return_call(temp_list_name, call_expr, assignments) ::= <<
+ArrayList<Object> <temp_list_name> = <call_expr>;
+<assignments; separator="\n">
 >>
 
-block(commands) ::= <<
-<commands; separator="\n">
->>
+array_type(type) ::= "<type>[]"
+data_type(data_id) ::= "<data_id>"
+unpack_declare_item(type, var_name, temp_list_name, index) ::= "<type> <var_name> = (<type>)<temp_list_name>.get(<index>);"
+unpack_assign_item(var_name, type, temp_list_name, index) ::= "<var_name> = (<type>)<temp_list_name>.get(<index>);"
 
-declare_assign_stmt(type, lhs, rhs) ::= "<type> <lhs> = <rhs>;"
+literal_expr(value) ::= "<value>"
+var_expr(name) ::= "<name>"
 
-assign_stmt(lhs, rhs) ::= "<lhs> = <rhs>;"
+add_expr(left_expr, right_expr)      ::= "(<left_expr> + <right_expr>)"
+sub_expr(left_expr, right_expr)      ::= "(<left_expr> - <right_expr>)"
+mul_expr(left_expr, right_expr)      ::= "(<left_expr> * <right_expr>)"
+div_expr(left_expr, right_expr)      ::= "(<left_expr> / <right_expr>)"
+mod_expr(left_expr, right_expr)      ::= "(<left_expr> % <right_expr>)"
 
+equals_expr(left_expr, right_expr)   ::= "(<left_expr> == <right_expr>)"
+neq_expr(left_expr, right_expr)      ::= "(<left_expr> != <right_expr>)"
+lt_expr(left_expr, right_expr)       ::= "(<left_expr> \< <right_expr>)"
+and_expr(left_expr, right_expr)      ::= "(<left_expr> && <right_expr>)"
 
-lvalue(name, array) ::= "<name><array>"
+not_expr(expr) ::= "(!<expr>)"
+neg_expr(expr) ::= "(-<expr>)"
+
 array_access(base, index) ::= "<base>[<index>]"
-assign_array_stmt(lhs, rhs) ::= "<lhs> = <rhs>"
-
-boolean_expr(value) ::= "<value>"
-float_expr(value) ::= "<value>"
-int_expr(value) ::= "<value>"
-
-new_array(var, type, expr) ::= "<var> = new <type>[<expr>]"
-
-call(name, args) ::= <<<name>(<args; separator=", ">)>>
-
-mul_expr(left_expr, right_expr) ::= "(<left_expr> * <right_expr>)"
-div_expr(left_expr, right_expr) ::= "(<left_expr> / <right_expr>)"
-mod_expr(left_expr, right_expr) ::= "(<left_expr> % <right_expr>)"
-add_expr(left_expr, right_expr) ::= "(<left_expr> + <right_expr>)"
-sub_expr(left_expr, right_expr) ::= "(<left_expr> - <right_expr>)"
 dot_expr(base, field) ::= "<base>.<field>"
-lt_expr(left_expr, right_expr) ::= "(<left_expr> \< <right_expr>)"
-equals_expr(left_expr, right_expr) ::= "(<left_expr> == <right_expr>)"
-and_expr(left_expr, right_expr) ::= "(<left_expr> && <right_expr>)"
-not_expr(expr) ::= "!<expr>"
-neg_expr(expr) ::= "((-1)*(<expr>))"
 
 new_obj_expr(type) ::= "new <type>()"
-new_array_expr(type, size) ::= "new <type>[<size>]"
-call_stmt(call_expr) ::= "<call_expr>"
+new_array_expr(type, sizes) ::= "new <type><sizes>"
+
+call_expr(name, args) ::= "<name>(<args; separator=\", \">)"
+call_index_access(call, index) ::= "((ArrayList<Object>)<call>).get(<index>)"
