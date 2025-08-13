@@ -9,6 +9,11 @@ import langUtil.*;
 
 import java.util.List;
 import java.util.Map;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
@@ -550,5 +555,25 @@ public class JavaVisitor extends Visitor {
         readTpl.add("read_method", readMethod);
         
         this.cmd = readTpl;
+    }
+
+    public void saveProgram() {
+        try {
+            Path currentDir = Paths.get("").toAbsolutePath();
+            Path outputFile = currentDir.resolve("LangProgram.java");
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile.toFile()))) {
+                ;
+                for (String line : javaProgram) {
+                    System.out.println(line);
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+            System.out.println("Programa Jasmin criado com sucesso!");
+            System.out.println("Programa salvo em: " + outputFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

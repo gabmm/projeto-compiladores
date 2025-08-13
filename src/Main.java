@@ -67,7 +67,8 @@ public class Main {
                     tJava.printErrors();
                     JavaVisitor jv = new JavaVisitor(tJava.getEnvs());
                     programNode.accept(jv);
-                    jv.printProg();
+                    // jv.printProg();
+                    jv.saveProgram();
                     break;
                 case "-gen":
                     TypeCheckerVisitor tJasmin = new TypeCheckerVisitor();

@@ -25,6 +25,10 @@ JASMIN_BIN_DIR = bin/jasmin
 JASMIN_SRC = ProgramaLang.j
 JASMIN_CLASS = ProgramaLang.class
 
+JAVA_SRC = LangProgram.java
+JAVA_CLASS = LangProgram
+JAVA_BIN_DIR = bin/java
+
 FLEX_FILE    = $(SRC_DIR)/parser/lexer.flex
 GRAMMAR_FILE = $(SRC_DIR)/parser/lang.grammar
 MAIN_CLASS   = Main
@@ -109,6 +113,12 @@ jasmin:
 	java -jar $(JASMIN_JAR) -d $(JASMIN_BIN_DIR) $(JASMIN_SRC)
 	java -cp $(JASMIN_BIN_DIR) ProgramaLang
 	@rm -f $(JASMIN_BIN_DIR)/$(JASMIN_CLASS)
+
+java:
+	@mkdir -p $(JAVA_BIN_DIR)
+	@javac -d $(JAVA_BIN_DIR) $(JAVA_SRC)
+	@java -cp $(JAVA_BIN_DIR) $(JAVA_CLASS)
+	@rm -f $(JAVA_BIN_DIR)/*.class
 
 clean:
 	$(call RM,$(BIN_DIR))

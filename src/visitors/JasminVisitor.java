@@ -102,8 +102,6 @@ public class JasminVisitor extends Visitor {
         updateLocalEnv(node.getName());
         LinkedHashMap<String, SType> envVars = this.localType.getEnv();
 
-        fun.add("stack_max", "10");
-
         int locals = envVars.size();
         locals += 2; // duas variáveis auxiliares pro vetor de objetos e pro iterador
 
@@ -128,6 +126,8 @@ public class JasminVisitor extends Visitor {
 
         fun.add("block", block);
 
+        fun.add("stack_max", 10);
+        System.out.println(fun.render());
         funs.add(fun);
     }
      @Override
