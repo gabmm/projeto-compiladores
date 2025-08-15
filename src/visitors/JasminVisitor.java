@@ -857,7 +857,7 @@ public class JasminVisitor extends Visitor {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile.toFile()))) {
                 ;
                 for (String line : jasminProgram) {
-                    System.out.println(line);
+                    // System.out.println(line);
                     writer.write(line);
                     writer.newLine();
                 }
