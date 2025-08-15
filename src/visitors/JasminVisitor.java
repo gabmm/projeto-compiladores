@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -126,8 +127,10 @@ public class JasminVisitor extends Visitor {
 
         fun.add("block", block);
 
-        fun.add("stack_max", 10);
-        System.out.println(fun.render());
+        int maxStack = getMaxStack(fun.render());
+
+        fun.add("stack_max", maxStack);
+
         funs.add(fun);
     }
      @Override
@@ -811,6 +814,7 @@ public class JasminVisitor extends Visitor {
     }
 
     private void updateLocalEnv(String fName) {
+        typeChecker.setCurrent(fName);
         this.localMap = jEnvs.get(fName);
         this.localType = envs.get(fName);
     }
@@ -863,6 +867,67 @@ public class JasminVisitor extends Visitor {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public int getMaxStack(String function) {
+        int currentStack = 0;
+        int maxStack = 0;
+        List<String> jasminLines = Arrays.asList(function.split("\n"));
+
+        for (String line : jasminLines) {
+            line = line.trim();
+
+            if (line.isEmpty() || line.startsWith(";") || line.startsWith(".") || line.endsWith(":")) {
+                continue;
+            }
+
+            if (line.matches("^(iconst|bipush|sipush|ldc(2)?).*")) {
+                currentStack += 1;
+            } else if (line.matches("^(iload|fload|aload)(_\\d+)?$")) {
+                currentStack += 1;
+            } else if (line.matches("^(istore|fstore|astore)(_\\d+)?$")) {
+                currentStack -= 1;
+            } else if (line.matches("^(iaload|faload|aaload)$")) {
+                currentStack -= 1;
+            } else if (line.matches("^(iastore|fastore|aastore)$")) {
+                currentStack -= 3;
+            } else if (line.matches("^(i|f)?(add|sub|mul|div|rem)$")) {
+                currentStack -= 1;
+            } else if (line.matches("^if(eq|ne|lt|ge|gt|le)\\s+.*$")) {
+                currentStack -= 1;
+            } else if (line.startsWith("invokestatic") && line.contains("ProgramaLang")) {
+                String aux = line.substring(line.indexOf("/") + 1);
+                String funName = aux.substring(0, aux.indexOf("("));
+                STyFun funData = (STyFun) envs.get(funName).getType();
+                currentStack -= funData.getParams().length;
+                if (funData.getReturns().length > 1) {
+                    currentStack += 1;
+                }
+            } else if (line.matches("getstatic java/lang/System/out Ljava/io/PrintStream;")) {
+                currentStack += 1;
+            } else if (line.matches("invokespecial java/lang/Object/<init>()V")) {
+                currentStack -= 1;
+            } else if (line.matches("^invokevirtual java/io/PrintStream/println\\(.*\\)V$")) {
+                currentStack -= 2;
+            } else if (line.matches("^(areturn)$")) {
+                currentStack -= 1;
+            } else if (line.equals("return")) {
+                // do nothing
+            }
+
+            // if (currentStack < 0) {
+            // currentStack = 0;
+            // }
+
+            // System.out.println(currentStack + " " + line);
+            // System.out.println(maxStack);
+
+            if (currentStack > maxStack) {
+                maxStack = currentStack;
+            }
+        }
+
+        return maxStack;
     }
 
 }

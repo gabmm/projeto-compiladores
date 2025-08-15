@@ -60,6 +60,11 @@ public class TypeCheckerVisitor extends Visitor {
     public TyEnv<LocalEnv<SType>> getEnvs() {
         return this.envs;
     }
+
+    public void setCurrent(String name) {
+        current = envs.get(name);
+    }
+
     public SType typeOf(Exp node) {
         node.accept(this);
         return operands.pop();
