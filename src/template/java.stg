@@ -6,13 +6,13 @@ import java.util.Arrays;
 import java.util.Scanner;
 
 public class LangProgram {
-    private static Scanner __inputScanner = new Scanner(System.in);
+    private static Scanner scan = new Scanner(System.in);
 
     <data_defs; separator="\n\n">
     <fun_defs; separator="\n\n">
     
     public static void main(String[] args) {
-        _main();
+        main_lang();
     }
 }
 >>
@@ -38,23 +38,32 @@ block(commands) ::= <<
 >>
 
 
-
 assign_stmt(lhs, rhs) ::= "<lhs> = <rhs>;"
 declare_assign_stmt(type, lhs, rhs) ::= "<type> <lhs> = <rhs>;"
 
 print_stmt(expr) ::= "System.out.println(<expr>);"
 
 if_stmt(expr, thn, els) ::= <<
-if (<expr>) {
-<thn>
+if <expr> {
+    <thn>
 }<if(els)> else {
-<els>
+    <els>
 }<endif>
 >>
 
-while_stmt(expr, stmt) ::= <<
-while (<expr>) {
-<stmt>
+for_n_times(var, limit, body) ::= <<
+for (int <var> = 0; <var> \< <limit>; <var>++) {
+    <body>
+}
+>>
+for_countdown(type, var, limit, body) ::= <<
+for (<type> <var> = <limit>; <var> > 0; <var>--) {
+    <body>
+}
+>>
+for_each(type, var, collection, body) ::= <<
+for (<type> <var> : <collection>) {
+    <body>
 }
 >>
 
@@ -83,7 +92,6 @@ sub_expr(left_expr, right_expr)      ::= "(<left_expr> - <right_expr>)"
 mul_expr(left_expr, right_expr)      ::= "(<left_expr> * <right_expr>)"
 div_expr(left_expr, right_expr)      ::= "(<left_expr> / <right_expr>)"
 mod_expr(left_expr, right_expr)      ::= "(<left_expr> % <right_expr>)"
-
 equals_expr(left_expr, right_expr)   ::= "(<left_expr> == <right_expr>)"
 neq_expr(left_expr, right_expr)      ::= "(<left_expr> != <right_expr>)"
 lt_expr(left_expr, right_expr)       ::= "(<left_expr> \< <right_expr>)"

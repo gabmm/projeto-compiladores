@@ -73,6 +73,7 @@ public class JavaVisitor extends Visitor {
         }
         return "Object"; 
     }
+    
     private void visitBinaryExpr(String templateName, Exp left, Exp right) { // add, sub, mul, mod, lt, eq ...
         right.accept(this);
         ST right_expr = this.exp;
@@ -110,7 +111,7 @@ public class JavaVisitor extends Visitor {
         this.currentEnv = envs.get(node.getName());
         this.declaredInScope.clear();
         if (node.getName().equals("main")){
-            fun.add("name", "_main");
+            fun.add("name", "main_lang");
         } else {
             fun.add("name", node.getName());
         }
@@ -364,16 +365,30 @@ public class JavaVisitor extends Visitor {
         node.getCondition().accept(this); 
         ST condition = this.exp;
 
-        node.getThenCmd().accept(this);
-        ST then_cmd = this.cmd;
+        Cmd thenNode = node.getThenCmd();
+        thenNode.accept(this);
+
+        ST then_cmd;
+
+        if (thenNode instanceof Block){
+            then_cmd = this.block;
+        }
+        else{
+            then_cmd = this.cmd;
+        }
 
         ST else_cmd = null;
         if(node.getElseCmd() != null){
-            node.getElseCmd().accept(this);
-            else_cmd = this.cmd;
+            Cmd elseNode = node.getElseCmd();
+            elseNode.accept(this);
+            if (elseNode instanceof Block) {
+                else_cmd = this.block;
+            } else {
+                else_cmd = this.cmd;
+            }
         }
 
-        ST if_cmd = groupTemplate.getInstanceOf("if");
+        ST if_cmd = groupTemplate.getInstanceOf("if_stmt");
         if_cmd.add("expr", condition);
         if_cmd.add("thn", then_cmd);
         if(else_cmd != null){
@@ -400,18 +415,66 @@ public class JavaVisitor extends Visitor {
 
     @Override
     public void visit (Iterate node){
-        node.getCondition().accept(this); 
-        ST condition = this.exp;
-        
-        node.getBody().accept(this); 
-        ST body = this.cmd; 
-        
-        ST while_cmd = groupTemplate.getInstanceOf("while");
-        while_cmd.add("expr", condition);
-        while_cmd.add("stmt", body);
-        this.cmd = while_cmd;
-    }
+        Cmd body = node.getBody();
+        body.accept(this);
 
+        ST bodyCode;
+        if(body instanceof Block){
+            bodyCode = this.block;
+        }
+        else {
+            bodyCode = this.cmd;
+        }
+        ItCond condition = node.getCondition();
+        
+        if (condition instanceof ItCondExp) {
+            ItCondExp condExp = (ItCondExp) condition;
+
+            condExp.getCond().accept(this);
+            ST limit = this.exp;
+
+            ST forCmd = groupTemplate.getInstanceOf("for_n_times");
+            forCmd.add("var", "i"); // var temporario
+            forCmd.add("limit", limit);
+            forCmd.add("body", bodyCode);
+            this.cmd = forCmd;
+        }
+         else if (condition instanceof ItCondId) {
+            ItCondId condVar = (ItCondId) condition;
+            String varName = condVar.getID();
+            condVar.getCond().accept(this);
+            ST exp = this.exp;
+
+            Exp expNode = condVar.getCond();
+            SType expType;
+            if (expNode instanceof LValue) {
+                expType = getTypeOfLValue((LValue) expNode);
+            }
+            else if (expNode instanceof NInt) {
+                expType = STyInt.initSTyInt();
+            } else {
+                expType = STyError.iniSTyError();
+            }
+            if (expType instanceof STyInt) {
+                ST forCmd = groupTemplate.getInstanceOf("for_countdown"); // contagem decrescente
+                forCmd.add("type", "int");
+                forCmd.add("var", varName);
+                forCmd.add("limit", exp);
+                forCmd.add("body", bodyCode);
+                this.cmd = forCmd;
+            }
+            else if (expType instanceof STyArr) { // itera sobre array
+                    SType elementType = ((STyArr) expType).getType();
+                    ST forCmd = groupTemplate.getInstanceOf("for_each");
+                    String element = mapTypeToJava(elementType);
+                    forCmd.add("type", element);
+                    forCmd.add("var", varName);
+                    forCmd.add("collection", exp);
+                    forCmd.add("body", bodyCode);
+                    this.cmd = forCmd;
+            }
+        }
+    }
 
 
     
