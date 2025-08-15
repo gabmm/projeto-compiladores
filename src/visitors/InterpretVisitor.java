@@ -576,7 +576,7 @@ public void visit(Iterate node) {
             env.push(new HashMap<>());
             addVariable(varName, null);
 
-            for (int i = 0; i < limit; i++) {
+            for (int i = limit; i > 0 ; i--) {
                 updateVariable(varName, i); 
                 node.getBody().accept(this);
                 if (returnMode) break;
