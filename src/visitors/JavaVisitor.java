@@ -628,12 +628,12 @@ public class JavaVisitor extends Visitor {
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile.toFile()))) {
                 ;
                 for (String line : javaProgram) {
-                    System.out.println(line);
+                    // System.out.println(line);
                     writer.write(line);
                     writer.newLine();
                 }
             }
-            System.out.println("Programa Jasmin criado com sucesso!");
+            System.out.println("Programa Java criado com sucesso!");
             System.out.println("Programa salvo em: " + outputFile);
         } catch (IOException e) {
             e.printStackTrace();

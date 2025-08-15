@@ -36,7 +36,7 @@ public class Main {
                 System.err.println("Rejected!");
                 return;
             }
-            System.out.println(("Accepted!"));
+            // System.out.println(("Accepted!"));
             switch (directive) {
                 case "-syn":
                     // nao faz mais nada, a analise ja foi feita.
@@ -59,12 +59,13 @@ public class Main {
                     System.out.println("-----\n");
                     typeChecker.printData();
                     System.out.println("-----\n");
-                    typeChecker.printErrors();
+                    typeChecker.checkErrors();
                     break;
                 case "-src":
                     TypeCheckerVisitor tJava = new TypeCheckerVisitor();
                     programNode.accept(tJava);
-                    tJava.printErrors();
+                    if (tJava.checkErrors())
+                        break;
                     JavaVisitor jv = new JavaVisitor(tJava.getEnvs());
                     programNode.accept(jv);
                     // jv.printProg();
@@ -73,7 +74,8 @@ public class Main {
                 case "-gen":
                     TypeCheckerVisitor tJasmin = new TypeCheckerVisitor();
                     programNode.accept(tJasmin);
-                    tJasmin.printErrors();
+                    if (tJasmin.checkErrors())
+                        break;
                     JasminVisitor jasv = new JasminVisitor(tJasmin, tJasmin.getEnvs());
                     programNode.accept(jasv);
                     // jasv.printProg();

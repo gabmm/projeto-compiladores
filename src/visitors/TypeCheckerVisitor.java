@@ -60,6 +60,11 @@ public class TypeCheckerVisitor extends Visitor {
     public TyEnv<LocalEnv<SType>> getEnvs() {
         return this.envs;
     }
+
+    public void setCurrent(String name) {
+        current = envs.get(name);
+    }
+
     public SType typeOf(Exp node) {
         node.accept(this);
         return operands.pop();
@@ -78,10 +83,11 @@ public class TypeCheckerVisitor extends Visitor {
         }
     }
 
-    public void printErrors() {
+    public boolean checkErrors() {
         for (String err : log) {
             System.out.println(err);
         }
+        return log.size() > 0;
     }
 
     public TypeCheckerVisitor() {
