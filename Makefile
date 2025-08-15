@@ -59,7 +59,7 @@ ifeq ($(OS),Windows_NT)
 else
 	@rsync -a --delete $(SRC_DIR)/ $(BIN_DIR)/
 endif
-	@javac -cp "$(BEAVER_RT)$(CP_SEPARATOR)$(ST_JAR)$(CP_SEPARATOR)$(ANTLR_JAR)" -d $(BIN_DIR) $(JAVA_SOURCES)
+	@javac -encoding UTF-8 -cp "$(BEAVER_RT)$(CP_SEPARATOR)$(ST_JAR)$(CP_SEPARATOR)$(ANTLR_JAR)" -d $(BIN_DIR) $(JAVA_SOURCES)
 
 
 
