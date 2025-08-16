@@ -10,80 +10,89 @@
 
 ---
 
-## ✅ Pré-requisitos
+## ✅ Pré‑requisitos
 
-Para compilar e executar este projeto, é necessário:
-
-- Ter o **Java SDK** instalado (recomenda-se Java 17 ou superior).
-- Ter o utilitário `dot` instalado (para gerar imagens da AST).  
-  Para instalar no Ubuntu/Debian, execute:
-
-```bash
-sudo apt install graphviz
-```
+- **Java SDK** (recomendado: Java 17 ou superior).
+- **GNU Make** (para usar o `Makefile`).
+- **Graphviz** (para o modo `-dot`, comando `dot`).  
+  Instalação (Ubuntu/Debian):
+  ```bash
+  sudo apt install graphviz
+  ```
 
 ---
 
-## ⚙️ Compilação e Execução
+## ⚙️ Como usar (compilar/rodar)
 
-O projeto utiliza um `Makefile` para automatizar a compilação e execução do compilador.
-
-### Para compilar e rodar o interpretador com um arquivo
+O projeto usa um `Makefile` com a meta `run`. Você escolhe **o que fazer** via a variável `ACTION` e informa o arquivo fonte via `FILE`.
 
 ```bash
-make run ACTION=-i FILE=caminho/para/arquivo
+make run ACTION=<diretiva> FILE=caminho/para/arquivo.lang
 ```
 
-### ℹ️ Parâmetros disponíveis:
+### 📋 Diretivas disponíveis (ACTION)
 
-- `ACTION=-i`  
-  Executa o **interpretador** da linguagem Lang, interpretando o código fonte.
+- `-i` — **Interpretador**  
+  Executa o interpretador da linguagem Lang sobre o arquivo fonte.
 
-- `ACTION=-dot`  
-  Executa o parser e o **DotVisitor**, gerando o arquivo `ast.dot`.  
-  Em seguida, o comando `dot` converte para a imagem `ast.png`.  
-  > **Importante:** Requer o `graphviz` instalado (com o comando `dot` acessível no terminal).
+- `-syn` — **Somente análise sintática**  
+  Roda apenas o parser; útil para checar se a entrada é sintaticamente válida.
 
-- `ACTION=-syn`  
-  Executa **apenas o analisador sintático**, verificando se o código fonte está sintaticamente correto.
+- `-dot` — **Gera imagem da AST**  
+  Gera `ast.dot` e, em seguida, `ast.png` usando `dot`.  
+  > Requer o Graphviz instalado.
 
-- `FILE=...`  
-  Caminho para o **arquivo de entrada** a ser analisado ou interpretado.
+- `-t` — **Analisador semântico estático**  
+  Roda o verificador de tipos. Imprime na tela todos os erros encontrados. 
 
+- `-src` — **Gerador *source‑to‑source***  
+  Gera o **código Java equivalente** ao programa Lang.  
+  - Saída: `LangProgram.java` na **pasta raiz** do projeto.  
+  - Para **compilar e executar** o Java gerado:  
+    ```bash
+    make java
+    ```
+
+- `-gen` — **Gerador *source‑to‑Jasmin***  
+  Gera o **código Jasmin** (bytecode assembly da JVM) para o programa Lang.  
+  - Saída: `ProgramaLang.j` na **pasta raiz** do projeto.  
+  - Para **montar e executar** o Jasmin gerado:  
+    ```bash
+    make jasmin
+    ```
 ---
 
-### 📌 Exemplos de uso:
+## 🧪 Exemplos
 
+Verificar apenas a sintaxe:
 ```bash
-make run ACTION=-syn FILE=tests/certo/exemplo
-make run ACTION=-dot FILE=tests/interpretador/fibonacci
-make run ACTION=-i FILE=input.txt
+make run ACTION=-syn FILE=tests/certo/exemplo.lang
 ```
 
----
-
-## 🧹 Limpeza
-
-Para remover todos os arquivos gerados durante a compilação:
-
+Verificar se um programa é bem tipado:
 ```bash
-make clean
+make run ACTION=-t FILE=input.lang
 ```
 
----
-
-## 🔎 Verificações rápidas
-
-- Verificar se o Java está corretamente instalado:
-
+Gerar e visualizar a AST:
 ```bash
-java -version
+make run ACTION=-dot FILE=tests/interpretador/fibonacci.lang
+# Resultado: ast.dot e ast.png na raiz
 ```
 
-- Verificar se o `dot` está disponível (necessário para o modo `-dot`):
-
+Interpretar um programa:
 ```bash
-dot -V
+make run ACTION=-i FILE=tests/interpretador/fatorial.lang
 ```
 
----
+Gerar **Java** a partir de Lang e executar:
+```bash
+make run ACTION=-src FILE=input.lang
+make java
+```
+
+Gerar **Jasmin** a partir de Lang e executar:
+```bash
+make run ACTION=-gen FILE=input.lang
+make jasmin
+```
